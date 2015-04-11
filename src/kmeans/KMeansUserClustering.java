@@ -37,12 +37,12 @@ public class KMeansUserClustering {
 
 	public static class kMeansMapper extends Mapper<Object, Text, Text, Text> {
 
-		String centroid1;
-		String centroid2;
-		String centroid3;
-		String centroid4;
-		String centroid5;
-		String flag;
+		private String centroid1;
+		private String centroid2;
+		private String centroid3;
+		private String centroid4;
+		private String centroid5;
+		private String flag;
 
 		protected void setup(Context context) throws IOException,
 				InterruptedException {
