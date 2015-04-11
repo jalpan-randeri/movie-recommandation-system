@@ -98,13 +98,9 @@ public class KMeansUserClustering {
 
 	public static void main(String[] args) throws IOException,
 			ClassNotFoundException, InterruptedException {
+
 		Configuration conf = new Configuration();
-		conf.setInt("c1", 1488844);
-		conf.setInt("c2", 822109);
-		conf.setInt("c3", 885013);
-		conf.setInt("c4", 30878);
-		conf.setInt("c5", 823519);
-		conf.setBoolean("flag", false);
+
 
 		String[] otherArgs = new GenericOptionsParser(conf, args)
 				.getRemainingArgs();
@@ -126,6 +122,14 @@ public class KMeansUserClustering {
 		FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
 		FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
 
-		System.exit(job.waitForCompletion(true) ? 0 : 1);
+		conf.setInt("c1", 1488844);
+		conf.setInt("c2", 822109);
+		conf.setInt("c3", 885013);
+		conf.setInt("c4", 30878);
+		conf.setInt("c5", 823519);
+		conf.setBoolean("flag", false);
+		job.waitForCompletion(true);
+
+		System.exit(0);
 	}
 }
