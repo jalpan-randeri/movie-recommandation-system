@@ -3,11 +3,4 @@
 	<output-test url="file://$MODULE_DIR$/out/test/NetflixPrize"/>
 	<exclude-output/>
 	<contentEntry url="file://$MODULE_DIR$"/>
-	<levels>
-		<level name="hadoop-ant-1.2.1" value="project"/>
-		<level name="asm-3.2" value="project"/>
-		<level name="hbase-0.94.26-tests" value="project"/>
-		<level name="activation-1.1" value="project"/>
-		<level name="opencsv-3.2" value="project"/>
-	</levels>
 </component>
