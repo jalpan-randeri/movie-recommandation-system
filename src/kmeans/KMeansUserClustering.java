@@ -23,21 +23,17 @@ import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.util.Bytes;
 
-public class KMeans {
+public class KMeansUserClustering {
 
 	public static class kMeansMapper extends Mapper<Object, Text, Text, Text> {
 
@@ -113,14 +109,14 @@ public class KMeans {
 		String[] otherArgs = new GenericOptionsParser(conf, args)
 				.getRemainingArgs();
 		if (otherArgs.length != 2) {
-			System.err.println("Usage: wordcount <in> <out>");
+			System.err.println("Usage: KMeansUserClustering <in> <out>");
 			System.exit(2);
 		}
 
-		Job job = new Job(conf, "kMeans");
+		Job job = new Job(conf, "Kmeans User Clustering");
 
 		job.setNumReduceTasks(5);
-		job.setJarByClass(KMeans.class);
+		job.setJarByClass(KMeansUserClustering.class);
 		job.setMapperClass(kMeansMapper.class);
 		job.setReducerClass(kMeansReducer.class);
 
