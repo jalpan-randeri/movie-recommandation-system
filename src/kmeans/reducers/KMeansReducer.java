@@ -43,15 +43,15 @@ public class KMeansReducer extends
 
         String centroid = String.valueOf(Math.round(sum / count));
 
-        int id = Integer.parseInt(key.toString().split("\\$")[1]);
+        String id = key.toString().split("\\$")[1];
 
-        Put row = new Put(Bytes.toBytes(id));
+        Put row = new Put(id.getBytes());
         row.add(TableConts.TABLE_CENTROID_FAMAILY.getBytes(),
                 TableConts.TABLE_CENTROID_COLUMN_ID_CENTROID.getBytes(), centroid.getBytes());
 
         mTable.put(row);
 
-        context.write(new Text(String.valueOf(id)), new Text(centroid));
+//        context.write(new Text(String.valueOf(id)), new Text(centroid));
     }
 }
 

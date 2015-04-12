@@ -24,10 +24,10 @@ public class CentroidUtils {
             query.setMaxVersions(1);
             Result row = centroidTable.get(query);
 
-            List<KeyValue> centorids = row.getColumn(Bytes.toBytes(TableConts.TABLE_CENTROID_FAMAILY),
+            List<KeyValue> centroids = row.getColumn(Bytes.toBytes(TableConts.TABLE_CENTROID_FAMAILY),
                     Bytes.toBytes(TableConts.TABLE_CENTROID_COLUMN_ID_CENTROID));
 
-            String centroid = Bytes.toString(centorids.get(0).getValue());
+            String centroid = Bytes.toString(centroids.get(0).getValue());
 
             if (list == null) {
                 list = new ArrayList<>();

@@ -16,6 +16,7 @@ package kmeans;
 
 import conts.KMeansConts;
 import conts.TableConts;
+import kmeans.comparator.CentroidGrouppingComparator;
 import kmeans.mappers.KMeansMapper;
 import kmeans.reducers.KMeansReducer;
 import kmeans.utils.CentroidUtils;
@@ -25,11 +26,10 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 
 import java.io.IOException;
@@ -50,8 +50,8 @@ public class KMeansUserClustering {
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
 
-        if (otherArgs.length != 2) {
-            System.out.println("Usage KMeansUserClustering <input> <output>");
+        if (otherArgs.length != 1) {
+            System.out.println("Usage KMeansUserClustering <input>");
             System.exit(0);
         }
 
@@ -64,9 +64,9 @@ public class KMeansUserClustering {
 
 
         String[] centroids = {"885013", "2442", "814701"};
-        initalizePreviousCentroidTable(KMeansConts.K, centroids);
+        initializePreviousCentroidTable(KMeansConts.K, centroids);
 
-        while (!isConverged && itr < 10) {
+//        while (!isConverged && itr < 10) {
             Job job = new Job(conf, "Kmeans-itration" + itr);
             job.setJarByClass(KMeansUserClustering.class);
 
@@ -74,32 +74,44 @@ public class KMeansUserClustering {
             job.setReducerClass(KMeansReducer.class);
 
             job.setNumReduceTasks(KMeansConts.K);
-
+            job.setGroupingComparatorClass(CentroidGrouppingComparator.class);
 
             job.setOutputKeyClass(Text.class);
             job.setOutputValueClass(Text.class);
 
-            FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
-            FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
+            job.setOutputFormatClass(TableOutputFormat.class);
+            job.getConfiguration().set(TableOutputFormat.OUTPUT_TABLE, TableConts.TABLE_NAME_NEW_CENTROID);
 
+            FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
             job.waitForCompletion(true);
 
             itr++;
-
+            System.out.println("iteration -> "+itr);
             // check for convergence
-            isConverged = getConvergence(KMeansConts.K);
-        }
+//            isConverged = getConvergence(KMeansConts.K);
+//            updateCentroids(KMeansConts.K);
+//        }
         cleanupTables();
     }
 
-    private static void initalizePreviousCentroidTable(int k, String[] centroids) throws IOException {
+    private static void updateCentroids(int k) throws IOException {
+        List<String> update_centroid = CentroidUtils.getNewCentroids(mNewCentroidTable, k);
+        String[] centroid = new String[update_centroid.size()];
+        for(int i = 0; i < centroid.length; i++){
+            centroid[i] = update_centroid.get(i);
+        }
+
+        initializePreviousCentroidTable(k, centroid);
+
+    }
+
+    private static void initializePreviousCentroidTable(int k, String[] centroids) throws IOException {
         for (int i = 0; i < k; i++) {
-            Put row = new Put(Bytes.toBytes(i));
+            Put row = new Put(String.valueOf(i).getBytes());
             row.add(TableConts.TABLE_CENTROID_FAMAILY.getBytes(),
                     TableConts.TABLE_CENTROID_COLUMN_ID_CENTROID.getBytes(), centroids[i].getBytes());
 
             mCentroidTable.put(row);
-
         }
     }
 
@@ -161,21 +173,22 @@ public class KMeansUserClustering {
         Configuration co = HBaseConfiguration.create(conf);
         HBaseAdmin admin = new HBaseAdmin(co);
 
+        // main centroids locations
         HTableDescriptor hd = new HTableDescriptor(TableConts.TABLE_NAME_CENTROID);
         hd.addFamily(new HColumnDescriptor(TableConts.TABLE_CENTROID_FAMAILY));
-        // main centroids locations
         if (admin.tableExists(TableConts.TABLE_NAME_CENTROID)) {
             admin.disableTable(TableConts.TABLE_NAME_CENTROID);
             admin.deleteTable(TableConts.TABLE_NAME_CENTROID);
         }
         admin.createTable(hd);
 
+
+        // new centroid location
         HTableDescriptor hd1 = new HTableDescriptor(TableConts.TABLE_NAME_NEW_CENTROID);
         hd1.addFamily(new HColumnDescriptor(TableConts.TABLE_NEW_CENTROID_FAMAILY));
-        // new centroid location
         if (admin.tableExists(TableConts.TABLE_NAME_NEW_CENTROID)) {
             admin.disableTable(TableConts.TABLE_NAME_NEW_CENTROID);
-            admin.deleteTable(TableConts.TABLE_NAME_CENTROID);
+            admin.deleteTable(TableConts.TABLE_NAME_NEW_CENTROID);
         }
         admin.createTable(hd1);
 
