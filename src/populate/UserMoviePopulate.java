@@ -58,11 +58,12 @@ public class UserMoviePopulate {
     }
 
 
-    public class DatasetMapper extends Mapper<LongWritable, Text, Text, Text>{
+    public static class DatasetMapper extends Mapper<LongWritable, Text, Text, Text>{
         private CSVParser parse = new CSVParser();
 
         @Override
-        protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+
             String[] tokens = parse.parseLine(value.toString());
 
             if(tokens.length == 4){
@@ -74,12 +75,12 @@ public class UserMoviePopulate {
         }
     }
 
-    public class DatasetReducer extends Reducer<Text, Text, Text, Text>{
+    public static class DatasetReducer extends Reducer<Text, Text, Text, Text>{
 
         private StringBuilder builder = new StringBuilder();
 
         @Override
-        protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+        public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             for(Text v : values){
                 builder.append(v.toString());
                 builder.append(UserConts.SEPRATOR_ITEM);
