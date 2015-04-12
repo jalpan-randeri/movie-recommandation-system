@@ -19,13 +19,13 @@ public class DistanceUtils {
      * @param sorted_list2  String (Movie_id,Rating$)
      * @return double [0-1]
      */
-    public static double cosineSimilarity(List<String> sorted_list1, List<String> sorted_list2){
+    public static double cosineSimilarity(String[] sorted_list1, String[] sorted_list2){
 
         // 1. get the common movie_id and multiply their corresponding ratings
         double common = getCommons(sorted_list1, sorted_list2);
 
-        // 2. divide the 1 by absolute value of sorted_list1 + sorted_list2
-        return common / (absolute(sorted_list1) + absolute(sorted_list2));
+        // 2. divide the 1 by absolute value of sorted_list1 * sorted_list2
+        return  common / (absolute(sorted_list1) * absolute(sorted_list2));
     }
 
 
@@ -34,10 +34,10 @@ public class DistanceUtils {
      * A = (1,2,3)
      * |A| = Sqrt(1*1 + 2*2 + 3*3)
      *
-     * @param sorted_list1
+     * @param sorted_list1 String[] tokens
      * @return
      */
-    private static double absolute(List<String> sorted_list1) {
+    private static double absolute(String[] sorted_list1) {
         double sum = 0;
         for(String item : sorted_list1){
             double rat = getRating(item);
@@ -52,8 +52,8 @@ public class DistanceUtils {
      * @param token String representing (Movie_id,Rating$)
      * @return int rating square;
      */
-    private static int getRating(String token) {
-        return Integer.parseInt(token.split(DatasetConts.SEPRATOR_VALUE)[1]
+    private static double getRating(String token) {
+        return Double.parseDouble(token.split(DatasetConts.SEPRATOR_VALUE)[1]
                 .replace(DatasetConts.SEPRATOR_ITEM, ""));
     }
 
@@ -74,36 +74,25 @@ public class DistanceUtils {
      * @param sorted_list2 sorted List[String] representing movie,rating
      * @return Double the common movie rating multiplication.
      */
-    private static double getCommons(List<String> sorted_list1, List<String> sorted_list2) {
+    private static double getCommons(String[] sorted_list1, String[] sorted_list2) {
         double common = 0;
 
-        Iterator<String> ptr1 = sorted_list1.iterator();
-        Iterator<String> ptr2 = sorted_list2.iterator();
+        int ptr1 = 0;
+        int ptr2 = 0;
 
-        String item1 = null;
-        String item2 = null;
+        while(ptr1 < sorted_list1.length && ptr2 < sorted_list2.length){
 
-        while(ptr1.hasNext() && ptr2.hasNext()){
-            if(item1 == null){
-                item1 = ptr1.next();
-            }
-
-            if(item2 == null){
-                item2 = ptr2.next();
-            }
+            String item1 = sorted_list1[ptr1];
+            String item2 = sorted_list2[ptr2];
 
             if(isMovieSame(item1, item2)){
-                if(common == 0){
-                    common = getRating(item1) * getRating(item2);
-                }else{
-                    common = common * getRating(item1) * getRating(item2);
-                }
+                common = common + (getRating(item1) * getRating(item2));
             }
 
             if(isItem1GreaterThanIte2(item1, item2)){
-                item2 = ptr2.next();
+                ptr2++;
             }else{
-                item1 = ptr1.next();
+                ptr1++;
             }
         }
 
@@ -130,5 +119,12 @@ public class DistanceUtils {
         return getMovie(item1) == getMovie(item2);
     }
 
+
+    public static void main(String[] args) {
+        String[] list1 = {"1,4.75", "2,4.5", "3,5", "4,4.25", "5,4"};
+        String[] list2 = {"1,4", "2,3", "3,5", "4,2", "5,1"};
+
+        System.out.println(cosineSimilarity(list1, list2));
+    }
 
 }

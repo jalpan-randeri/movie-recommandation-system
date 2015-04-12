@@ -14,11 +14,8 @@
 
 package kmeans;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.NavigableMap;
-
 import com.opencsv.CSVParser;
+import conts.DatasetConts;
 import conts.MovieConts;
 import conts.TableConts;
 import org.apache.hadoop.conf.Configuration;
@@ -26,7 +23,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -35,7 +31,10 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
+import utils.DistanceUtils;
 
+import java.io.IOException;
+import java.util.List;
 
 
 public class KMeansUserClustering {
@@ -57,8 +56,26 @@ public class KMeansUserClustering {
 			String[] tokens = mParser.parseLine(value.toString());
 			if(tokens.length == 4){
 
-				String list = getMoviesList(tokens[MovieConts.INDEX_CUST_ID]);
+				String list_ip = getMoviesList(tokens[MovieConts.INDEX_CUST_ID]);
 
+				String[] centroids = {"885013", "2442", "814701"};
+
+				String nearest = null;
+				double closest = -2;
+
+				for(String centroid : centroids) {
+					String list_user = getMoviesList(centroid);
+
+					double similarity = DistanceUtils.cosineSimilarity(list_ip.split(DatasetConts.SEPRATOR_ITEM),
+																       list_user.split(DatasetConts.SEPRATOR_ITEM));
+
+					if(similarity > closest){
+						nearest = centroid;
+						closest = similarity;
+					}
+				}
+
+				context.write(new Text(nearest), new Text(tokens[MovieConts.INDEX_CUST_ID]));
 
 			}
 
@@ -83,11 +100,17 @@ public class KMeansUserClustering {
 	}
 
 	public static class KmeansReducer extends
-			Reducer<Text, IntWritable, Text, Text> {
+			Reducer<Text, Text, Text, Text> {
 
-		public void reduce(Text key, Iterable<IntWritable> values,
+		public void reduce(Text key, Iterable<Text> values,
 				Context context) throws IOException, InterruptedException {
+			int count = 0;
+			for(Text t : values){
+				count++;
+			}
 
+//			System.out.printf("%s, %d\n",key.toString(), count);
+			context.write(key, new Text(String.valueOf(count)));
 		}
 	}
 
@@ -111,6 +134,9 @@ public class KMeansUserClustering {
 
 			job.setMapperClass(KmeansMapper.class);
 			job.setReducerClass(KmeansReducer.class);
+
+		job.setNumReduceTasks(3);
+
 
 			job.setOutputKeyClass(Text.class);
 			job.setOutputValueClass(Text.class);
