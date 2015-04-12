@@ -1,6 +1,7 @@
 package utils;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -8,13 +9,21 @@ import java.util.List;
  */
 public class DistanceUtils {
 
-    public static double cosineSimilarity(List<Integer> list1, List<Integer> list2){
-        Collections.sort(list1);
-        Collections.sort(list2);
+    public static double cosineSimilarity(List<String> list1, List<String> list2){
+        Collections.sort(list1, new SortingComparator());
+        Collections.sort(list2, new SortingComparator());
 
         // get the common integers
         //
 
         return 0;
+    }
+
+    public static class SortingComparator implements Comparator<String>{
+
+        @Override
+        public int compare(String o1, String o2) {
+            return 0;
+        }
     }
 }

@@ -23,6 +23,7 @@ import conts.MovieConts;
 import conts.TableConts;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.IntWritable;
@@ -34,9 +35,8 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
-import org.apache.hadoop.hbase.HBaseConfiguration;
 
-import javax.xml.crypto.dsig.keyinfo.KeyValue;
+
 
 public class KMeansUserClustering {
 
@@ -56,15 +56,29 @@ public class KMeansUserClustering {
 				throws IOException, InterruptedException {
 			String[] tokens = mParser.parseLine(value.toString());
 			if(tokens.length == 4){
-				String user_id = tokens[MovieConts.INDEX_CUST_ID];
-				Get query = new Get(Bytes.toBytes(user_id));
-				query.setMaxVersions(1);
-				Result row = mTable.get(query);
 
-				NavigableMap<byte[],NavigableMap<byte[],NavigableMap<Long,byte[]>>> results = row.getMap();
-				System.out.println(results.size());
+				String list = getMoviesList(tokens[MovieConts.INDEX_CUST_ID]);
+
+
 			}
 
+		}
+
+		/**
+		 * get the list of all the movies this user has rated
+		 * @param user_id String as user_id which is key in hbase table
+		 * @return String representing the list of all the movie,rating $ separated.
+		 * @throws IOException
+		 */
+		private String getMoviesList(String user_id) throws IOException {
+			Get query = new Get(Bytes.toBytes(user_id));
+			query.setMaxVersions(1);
+			Result row = mTable.get(query);
+
+			List<KeyValue> movies = row.getColumn(Bytes.toBytes(TableConts.TABLE_USR_MOV_COL_FAMILY),
+                    Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_LIST_MOV));
+
+			return Bytes.toString(movies.get(0).getValue());
 		}
 	}
 
