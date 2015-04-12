@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="/NetflixPrize/src"/>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/NetflixPrize/src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/NetflixPrize/src"/>
 	<classpathentry kind="lib" path="/NetflixPrize/lib/opencsv-3.2.jar"/>
@@ -116,5 +117,5 @@
 	<classpathentry kind="lib" path="/Users/jalpanranderi/hbase-0.94.26/lib/velocity-1.7.jar"/>
 	<classpathentry kind="lib" path="/Users/jalpanranderi/hbase-0.94.26/lib/xmlenc-0.52.jar"/>
 	<classpathentry kind="lib" path="/Users/jalpanranderi/hbase-0.94.26/lib/zookeeper-3.4.5.jar"/>
-	<classpathentry kind="output" path="bin"/>
+	<classpathentry kind="output" path="out/production/NetflixPrize"/>
 </classpath>
