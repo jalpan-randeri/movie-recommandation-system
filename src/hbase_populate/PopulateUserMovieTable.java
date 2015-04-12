@@ -1,6 +1,7 @@
 package hbase_populate;
 
 import com.opencsv.CSVParser;
+import conts.DatasetConts;
 import conts.MovieConts;
 import conts.TableConts;
 import org.apache.hadoop.conf.Configuration;
@@ -12,14 +13,15 @@ import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.Writable;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 
+import java.io.DataInput;
+import java.io.DataOutput;
 import java.io.IOException;
 
 /**
@@ -51,7 +53,10 @@ public class PopulateUserMovieTable {
         job.setReducerClass(PreReducer.class);
         job.setNumReduceTasks(10);
 
-        job.setOutputKeyClass(Text.class);
+        job.setSortComparatorClass(KeyComparator.class);
+        job.setGroupingComparatorClass(UserGroupper.class);
+
+        job.setOutputKeyClass(MovKey.class);
         job.setOutputValueClass(Text.class);
 
         job.setOutputFormatClass(TableOutputFormat.class);
@@ -80,7 +85,7 @@ public class PopulateUserMovieTable {
     }
 
 
-    public static class PreMapper extends Mapper<Object, Text, Text, Text>{
+    public static class PreMapper extends Mapper<Object, Text, MovKey, Text>{
 
         private CSVParser parser = new CSVParser();
 
@@ -89,17 +94,119 @@ public class PopulateUserMovieTable {
         protected void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String[] tokens = parser.parseLine(value.toString());
 
-            String out = String.format("%s,%s",tokens[MovieConts.INDEX_MOVIE_ID], tokens[MovieConts.INDEX_RATING]);
+            MovKey mKey = new MovKey(tokens[MovieConts.INDEX_CUST_ID], tokens[MovieConts.INDEX_MOVIE_ID]);
 
-            context.write(new Text(tokens[MovieConts.INDEX_CUST_ID]),
-                          new Text(out));
+            context.write(mKey, new Text(tokens[MovieConts.INDEX_RATING]));
         }
 
     }
 
 
+    public static class MovKey implements WritableComparable<MovKey>{
 
-    public static class PreReducer extends Reducer<Text, Text, ImmutableBytesWritable, Writable>{
+        public String user;
+        public String movie_id;
+
+
+
+        public MovKey() {
+            user = "";
+            movie_id = "";
+        }
+
+        public MovKey(String user, String movie_id) {
+            this.user = user;
+            this.movie_id = movie_id;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof MovKey)) return false;
+
+            MovKey movKey = (MovKey) o;
+
+            if (!user.equals(movKey.user)) return false;
+            return movie_id.equals(movKey.movie_id);
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = user.hashCode();
+            result = 31 * result + movie_id.hashCode();
+            return result;
+        }
+
+        @Override
+        public int compareTo(MovKey o) {
+            long this_usr = Long.parseLong(user);
+            long that_user = Long.parseLong(o.user);
+            int ans = Long.compare(this_usr, that_user);
+
+            if(ans == 0) {
+                long this_mov = Long.parseLong(movie_id);
+                long that_mov = Long.parseLong(o.movie_id);
+
+                return Long.compare(this_mov, that_mov);
+            }
+
+            return ans;
+        }
+
+
+
+        @Override
+        public void write(DataOutput dataOutput) throws IOException {
+            WritableUtils.writeString(dataOutput, user);
+            WritableUtils.writeString(dataOutput, movie_id);
+        }
+
+        @Override
+        public void readFields(DataInput dataInput) throws IOException {
+            user = WritableUtils.readString(dataInput);
+            movie_id = WritableUtils.readString(dataInput);
+        }
+    }
+
+
+
+    public static class UserGroupper extends WritableComparator{
+
+        protected UserGroupper() {
+            super(MovKey.class, true);
+        }
+
+        @Override
+        public int compare(WritableComparable a, WritableComparable b) {
+            MovKey key1 = (MovKey) a;
+            MovKey key2 = (MovKey) b;
+
+            long u1 = Long.parseLong(key1.user);
+            long u2 = Long.parseLong(key2.user);
+
+            return Long.compare(u1, u2);
+        }
+
+    }
+
+
+    public static class KeyComparator extends WritableComparator {
+
+        protected KeyComparator() {
+            super(MovKey.class, true);
+        }
+
+        @Override
+        public int compare(WritableComparable a, WritableComparable b) {
+            MovKey key1 = (MovKey) a;
+            MovKey key2 = (MovKey) b;
+
+            return key1.compareTo(key2);
+        }
+    }
+
+    public static class PreReducer extends Reducer<MovKey, Text, ImmutableBytesWritable, Writable>{
 
         private StringBuilder builder = new StringBuilder();
         private HTable mTable;
@@ -120,9 +227,11 @@ public class PopulateUserMovieTable {
         }
 
         @Override
-        protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+        protected void reduce(MovKey key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 
             for(Text v : values){
+                builder.append(key.movie_id);
+                builder.append(DatasetConts.SEPRATOR_VALUE);
                 builder.append(v.toString());
                 builder.append(SEPRATOR_ITEM);
             }
