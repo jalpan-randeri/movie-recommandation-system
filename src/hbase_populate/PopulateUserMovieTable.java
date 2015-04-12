@@ -29,10 +29,8 @@ import java.io.IOException;
  */
 public class PopulateUserMovieTable {
 
-    public static final String SEPRATOR_VALUE = ",";
-    public static final String SEPRATOR_ITEM = "$";
-    private static final int MB_100 = 102400;
 
+    private static final int MB_100 = 102400;
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
         Configuration conf = new Configuration();
@@ -94,9 +92,10 @@ public class PopulateUserMovieTable {
         protected void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String[] tokens = parser.parseLine(value.toString());
 
-            MovKey mKey = new MovKey(tokens[MovieConts.INDEX_CUST_ID], tokens[MovieConts.INDEX_MOVIE_ID]);
-
-            context.write(mKey, new Text(tokens[MovieConts.INDEX_RATING]));
+            if(tokens.length == 4) {
+                MovKey mKey = new MovKey(tokens[MovieConts.INDEX_CUST_ID], tokens[MovieConts.INDEX_MOVIE_ID]);
+                context.write(mKey, new Text(tokens[MovieConts.INDEX_RATING]));
+            }
         }
 
     }
@@ -233,7 +232,7 @@ public class PopulateUserMovieTable {
                 builder.append(key.movie_id);
                 builder.append(DatasetConts.SEPRATOR_VALUE);
                 builder.append(v.toString());
-                builder.append(SEPRATOR_ITEM);
+                builder.append(DatasetConts.SEPRATOR_ITEM);
             }
 
 
