@@ -1,6 +1,7 @@
 package hbase_populate;
 
 import com.opencsv.CSVParser;
+import conts.DatasetConts;
 import conts.MovieConts;
 import conts.TableConts;
 import org.apache.hadoop.conf.Configuration;
@@ -27,8 +28,7 @@ import java.io.IOException;
  */
 public class PopulateUserMovieTable {
 
-    public static final String SEPRATOR_VALUE = ",";
-    public static final String SEPRATOR_ITEM = "$";
+
     private static final int MB_100 = 102400;
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
@@ -124,7 +124,7 @@ public class PopulateUserMovieTable {
 
             for(Text v : values){
                 builder.append(v.toString());
-                builder.append(SEPRATOR_ITEM);
+                builder.append(DatasetConts.SEPRATOR_ITEM);
             }
 
 
