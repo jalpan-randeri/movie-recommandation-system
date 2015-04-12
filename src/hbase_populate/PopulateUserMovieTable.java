@@ -3,9 +3,12 @@ package hbase_populate;
 import com.opencsv.CSVParser;
 import conts.MovieConts;
 import conts.TableConts;
+import conts.UserConts;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.*;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
@@ -27,8 +30,7 @@ import java.io.IOException;
  */
 public class PopulateUserMovieTable {
 
-    public static final String SEPRATOR_VALUE = ",";
-    public static final String SEPRATOR_ITEM = "$";
+
     private static final int MB_100 = 102400;
 
 
@@ -124,7 +126,7 @@ public class PopulateUserMovieTable {
 
             for(Text v : values){
                 builder.append(v.toString());
-                builder.append(SEPRATOR_ITEM);
+                builder.append(UserConts.SEPRATOR_ITEM);
             }
 
 

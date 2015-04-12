@@ -3,4 +3,7 @@
 	<output-test url="file://$MODULE_DIR$/out/test/NetflixPrize"/>
 	<exclude-output/>
 	<contentEntry url="file://$MODULE_DIR$"/>
+	<levels>
+		<level name="opencsv-3.2" value="project"/>
+	</levels>
 </component>
