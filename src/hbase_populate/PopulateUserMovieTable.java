@@ -31,7 +31,6 @@ public class PopulateUserMovieTable {
     public static final String SEPRATOR_ITEM = "$";
     private static final int MB_100 = 102400;
 
-
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
@@ -89,10 +88,11 @@ public class PopulateUserMovieTable {
         protected void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String[] tokens = parser.parseLine(value.toString());
 
-            String out = String.format("%s,%s",tokens[MovieConts.INDEX_MOVIE_ID], tokens[MovieConts.INDEX_RATING]);
-
-            context.write(new Text(tokens[MovieConts.INDEX_CUST_ID]),
-                          new Text(out));
+            if(tokens.length == 4) {
+                String out = String.format("%s,%s", tokens[MovieConts.INDEX_MOVIE_ID], tokens[MovieConts.INDEX_RATING]);
+                context.write(new Text(tokens[MovieConts.INDEX_CUST_ID]),
+                        new Text(out));
+            }
         }
 
     }

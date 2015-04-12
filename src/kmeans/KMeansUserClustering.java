@@ -37,52 +37,14 @@ public class KMeansUserClustering {
 
 	public static class kMeansMapper extends Mapper<Object, Text, Text, Text> {
 
-		private String centroid1;
-		private String centroid2;
-		private String centroid3;
-		private String centroid4;
-		private String centroid5;
-		private String flag;
 
 		protected void setup(Context context) throws IOException,
 				InterruptedException {
-			Configuration conf = context.getConfiguration();
-
-			centroid1 = conf.get("c1");
-			centroid2 = conf.get("c2");
-			centroid3 = conf.get("c3");
-			centroid4 = conf.get("c4");
-			centroid5 = conf.get("c5");
-			flag = conf.get("flag");
 
 		}
 
 		public void map(Object key, Text value, Context context)
 				throws IOException, InterruptedException {
-
-			Configuration config = HBaseConfiguration.create();
-			HTable table = new HTable(config, TableConts.TABLE_NAME);
-
-			Scan s = new Scan();
-			// s.addColumn(Bytes.toBytes(TableConts.TABLE_USR_MOV_COL_FAMILY),
-			// Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_USR_ID));
-			ResultScanner scanner = table.getScanner(s);
-			//System.out.println("Found row: " + scanner.next());
-			try {
-				Result result = null;
-				while ((result = scanner.next()) != null) {
-					System.out.println(result);
-					byte[] userId = result.getValue(TableConts.TABLE_USR_MOV_COL_FAMILY.getBytes(), TableConts.TABLE_USR_MOV_COLUMN_LIST_MOV.getBytes());
-					//String id = userId.toString();
-					System.out.println(userId.toString());
-				}
-
-			} finally {
-				scanner.close();
-				table.close();
-			}
-
-			System.out.println(centroid1);
 
 		}
 	}
@@ -100,7 +62,6 @@ public class KMeansUserClustering {
 			ClassNotFoundException, InterruptedException {
 
 		Configuration conf = new Configuration();
-
 
 		String[] otherArgs = new GenericOptionsParser(conf, args)
 				.getRemainingArgs();
@@ -122,13 +83,19 @@ public class KMeansUserClustering {
 		FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
 		FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
 
-		conf.setInt("c1", 1488844);
-		conf.setInt("c2", 822109);
-		conf.setInt("c3", 885013);
-		conf.setInt("c4", 30878);
-		conf.setInt("c5", 823519);
 		conf.setBoolean("flag", false);
-		job.waitForCompletion(true);
+		int count = 0;
+		while(count < 5) {
+
+			conf.setInt("c1", 1488844);
+			conf.setInt("c2", 822109);
+			conf.setInt("c3", 885013);
+			conf.setInt("c4", 30878);
+			conf.setInt("c5", 823519);
+			job.waitForCompletion(true);
+			System.out.println(count);
+			count++;
+		}
 
 		System.exit(0);
 	}
