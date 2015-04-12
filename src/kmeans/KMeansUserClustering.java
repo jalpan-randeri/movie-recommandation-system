@@ -15,11 +15,18 @@
 package kmeans;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.NavigableMap;
 
+import com.opencsv.CSVParser;
+import conts.MovieConts;
 import conts.TableConts;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -28,28 +35,40 @@ import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
+
+import javax.xml.crypto.dsig.keyinfo.KeyValue;
 
 public class KMeansUserClustering {
 
-	public static class kMeansMapper extends Mapper<Object, Text, Text, Text> {
+	public static class KmeansMapper extends Mapper<LongWritable, Text, Text, Text> {
 
+		private HConnection mConnection;
+		private HTableInterface mTable;
+		private CSVParser mParser = new CSVParser();
 
 		protected void setup(Context context) throws IOException,
 				InterruptedException {
-
+			mConnection =  HConnectionManager.createConnection(context.getConfiguration());
+			mTable = mConnection.getTable(TableConts.TABLE_NAME.getBytes());
 		}
 
-		public void map(Object key, Text value, Context context)
+		public void map(LongWritable key, Text value, Context context)
 				throws IOException, InterruptedException {
+			String[] tokens = mParser.parseLine(value.toString());
+			if(tokens.length == 4){
+				String user_id = tokens[MovieConts.INDEX_CUST_ID];
+				Get query = new Get(Bytes.toBytes(user_id));
+				query.setMaxVersions(1);
+				Result row = mTable.get(query);
+
+				NavigableMap<byte[],NavigableMap<byte[],NavigableMap<Long,byte[]>>> results = row.getMap();
+				System.out.println(results.size());
+			}
 
 		}
 	}
 
-	public static class kMeansReducer extends
+	public static class KmeansReducer extends
 			Reducer<Text, IntWritable, Text, Text> {
 
 		public void reduce(Text key, Iterable<IntWritable> values,
@@ -62,41 +81,34 @@ public class KMeansUserClustering {
 			ClassNotFoundException, InterruptedException {
 
 		Configuration conf = new Configuration();
+		String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
 
-		String[] otherArgs = new GenericOptionsParser(conf, args)
-				.getRemainingArgs();
-		if (otherArgs.length != 2) {
-			System.err.println("Usage: KMeansUserClustering <in> <out>");
-			System.exit(2);
+		if(otherArgs.length != 2){
+			System.out.println("Usage KMeansUserClustering <input> <output>");
+			System.exit(0);
 		}
 
-		Job job = new Job(conf, "Kmeans User Clustering");
 
-		job.setNumReduceTasks(5);
-		job.setJarByClass(KMeansUserClustering.class);
-		job.setMapperClass(kMeansMapper.class);
-		job.setReducerClass(kMeansReducer.class);
+		boolean isConverged = false;
+		int itr = 0;
+//		while(!isConverged && itr < 10){
+			Job job = new Job(conf, "Kmeans-itration"+itr);
+			job.setJarByClass(KMeansUserClustering.class);
 
-		job.setOutputKeyClass(Text.class);
-		job.setOutputValueClass(Text.class);
+			job.setMapperClass(KmeansMapper.class);
+			job.setReducerClass(KmeansReducer.class);
 
-		FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
-		FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
+			job.setOutputKeyClass(Text.class);
+			job.setOutputValueClass(Text.class);
 
-		conf.setBoolean("flag", false);
-		int count = 0;
-		while(count < 5) {
+			FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
+			FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
 
-			conf.setInt("c1", 1488844);
-			conf.setInt("c2", 822109);
-			conf.setInt("c3", 885013);
-			conf.setInt("c4", 30878);
-			conf.setInt("c5", 823519);
 			job.waitForCompletion(true);
-			System.out.println(count);
-			count++;
-		}
 
-		System.exit(0);
+			itr++;
+
+			// check for convergence
+//		}
 	}
 }
