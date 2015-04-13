@@ -25,16 +25,9 @@ public class HbaseUtil {
         query.setMaxVersions(1);
         Result row = table.get(query);
 
-//        List<KeyValue> movies = row.getColumn(Bytes.toBytes(TableConts.TABLE_USR_MOV_COL_FAMILY),
-//                Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_LIST_MOV));
-
-//        return Bytes.toString(movies.get(0).getValue());
-
         byte[] cb = row.getValue(Bytes.toBytes(TableConts.TABLE_USR_MOV_COL_FAMILY),
                 Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_LIST_MOV));
 
         return  Bytes.toString(cb);
-
-//        return list;
     }
 }
