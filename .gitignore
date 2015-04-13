@@ -23,6 +23,9 @@ local.properties
 # CDT-specific
 .cproject
 
+# JDT-specific (Eclipse Java Development Tools)
+
+
 
 # PDT-specific
 .buildpath
@@ -41,7 +44,6 @@ local.properties
 .mtj.tmp/
 
 # Package Files #
-*.jar
 *.war
 *.ear
 

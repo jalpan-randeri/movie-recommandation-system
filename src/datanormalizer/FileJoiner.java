@@ -10,20 +10,20 @@ public class FileJoiner {
 
         File folder = new File("/Users/jalpanranderi/Documents/netflix-dataset/training_set/");
         FileWriter writer = new FileWriter("dataset.csv");
-        for(File f : folder.listFiles()) {
-                String name = f.getName().replace(".txt","");
-                BufferedReader reader = new BufferedReader(new InputStreamReader(
-                        new FileInputStream(f)));
-                String line = reader.readLine();
-                int count = 100;
-                while ((line = reader.readLine()) != null) {
-                    writer.write(String.format("%s,%s\n",name, line));
+        for (File f : folder.listFiles()) {
 
-                    if (count < 0) {
-                        break;
-                    }
-                    count++;
+            BufferedReader reader = new BufferedReader(new InputStreamReader(
+                    new FileInputStream(f)));
+
+            String line;
+            String name = null;
+            while ((line = reader.readLine()) != null) {
+                if (line.contains(":")) {
+                    name = line.replace(":","");
+                } else {
+                    writer.write(String.format("%s,%s\n", name, line));
                 }
+            }
 
             reader.close();
         }
