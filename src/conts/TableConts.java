@@ -20,4 +20,11 @@ public class TableConts {
     public static final String TABLE_NEW_CENTROID_FAMAILY = "centroids_family";
     public static final String TABLE_NEW_CENTROID_COLUMN_ID_CENTROID = "CENTROID_ID";
     public static final String TABLE_NEW_CENTROID_COLUMN_CENTROID = "CENTROID_VALUE";
+
+
+
+    public static final String TABLE_NAME_CLUSTERS = "TABLE_USR_CLUSTER";
+    public static final String TABLE_CLUSTERS_FAMILY = "clusters";
+    public static final String TABLE_CLUSTERS_COLUMN_ID_CENTROID = "CENTROID_ID";
+    public static final String TABLE_CLUSTERS_COLUMN_MEMBERS = "CLUSTER_MEMBERS";
 }

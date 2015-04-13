@@ -67,6 +67,9 @@ public class KMeansUserClustering {
         initializePreviousCentroidTable(KMeansConts.K, centroids);
 
         while (!isConverged && itr < 10) {
+
+            clearMembership(conf);
+
             Job job = new Job(conf, "Kmeans-itration" + itr);
             job.setJarByClass(KMeansUserClustering.class);
 
@@ -92,6 +95,22 @@ public class KMeansUserClustering {
             updateCentroids(KMeansConts.K);
         }
         cleanupTables();
+    }
+
+    private static void clearMembership(Configuration conf) throws IOException {
+        Configuration co = HBaseConfiguration.create(conf);
+        HBaseAdmin admin = new HBaseAdmin(co);
+
+
+        HTableDescriptor cluster_table = new HTableDescriptor(TableConts.TABLE_NAME_CLUSTERS);
+        cluster_table.addFamily(new HColumnDescriptor(TableConts.TABLE_CLUSTERS_FAMILY));
+        if(admin.tableExists(TableConts.TABLE_NAME_CLUSTERS)){
+            admin.disableTable(TableConts.TABLE_NAME_CLUSTERS);
+            admin.deleteTable(TableConts.TABLE_NAME_CLUSTERS);
+        }
+        admin.createTable(cluster_table);
+
+        admin.close();
     }
 
     /**
@@ -230,6 +249,7 @@ public class KMeansUserClustering {
             admin.deleteTable(TableConts.TABLE_NAME_NEW_CENTROID);
         }
         admin.createTable(hd1);
+
 
 
         admin.close();
