@@ -66,7 +66,7 @@ public class KMeansUserClustering {
         String[] centroids = {"885013", "2442", "814701"};
         initializePreviousCentroidTable(KMeansConts.K, centroids);
 
-//        while (!isConverged && itr < 10) {
+        while (!isConverged && itr < 10) {
             Job job = new Job(conf, "Kmeans-itration" + itr);
             job.setJarByClass(KMeansUserClustering.class);
 
@@ -88,12 +88,17 @@ public class KMeansUserClustering {
             itr++;
             System.out.println("iteration -> "+itr);
             // check for convergence
-//            isConverged = getConvergence(KMeansConts.K);
-//            updateCentroids(KMeansConts.K);
-//        }
+            isConverged = getConvergence(KMeansConts.K);
+            updateCentroids(KMeansConts.K);
+        }
         cleanupTables();
     }
 
+    /**
+     * update centroid will upadte the previous centroid with new centroids
+     * @param k Integer k total number of centroids
+     * @throws IOException
+     */
     private static void updateCentroids(int k) throws IOException {
         List<String> update_centroid = CentroidUtils.getNewCentroids(mNewCentroidTable, k);
         String[] centroid = new String[update_centroid.size()];
@@ -102,9 +107,14 @@ public class KMeansUserClustering {
         }
 
         initializePreviousCentroidTable(k, centroid);
-
     }
 
+    /**
+     * initalize previous centroids
+     * @param k Integer total number of centroids
+     * @param centroids String[] centroids
+     * @throws IOException
+     */
     private static void initializePreviousCentroidTable(int k, String[] centroids) throws IOException {
         for (int i = 0; i < k; i++) {
             Put row = new Put(String.valueOf(i).getBytes());
@@ -115,18 +125,33 @@ public class KMeansUserClustering {
         }
     }
 
+    /**
+     * setup connection to table will generate datasource connections
+     * @param conf Configuration
+     * @throws IOException
+     */
     private static void setupConnectionToTables(Configuration conf) throws IOException {
         mConnection = HConnectionManager.createConnection(conf);
         mCentroidTable = mConnection.getTable(TableConts.TABLE_NAME_CENTROID.getBytes());
         mNewCentroidTable = mConnection.getTable(TableConts.TABLE_NAME_NEW_CENTROID.getBytes());
     }
 
+    /**
+     * clean up table will close all the connection from hbase
+     * @throws IOException
+     */
     private static void cleanupTables() throws IOException {
         mNewCentroidTable.close();
         mCentroidTable.close();
         mConnection.close();
     }
 
+    /**
+     * determine if the convergence is happen or not
+     * @param k Integer representing the total number of clusters
+     * @return Boolean true iff convergence happens
+     * @throws IOException
+     */
     private static boolean getConvergence(int k) throws IOException {
         List<String> prev_centroids = CentroidUtils.getCentroids(mCentroidTable, k);
         List<String> new_centroids = CentroidUtils.getNewCentroids(mNewCentroidTable, k);
@@ -146,10 +171,14 @@ public class KMeansUserClustering {
         Collections.sort(new_centroids, new Comparator<String>() {
             @Override
             public int compare(String o1, String o2) {
-                int i1 = Integer.parseInt(o1);
-                int i2 = Integer.parseInt(o2);
+                if(o1 != null && o2 != null) {
+                    int i1 = Integer.parseInt(o1);
+                    int i2 = Integer.parseInt(o2);
 
-                return i1 - i2;
+                    return i1 - i2;
+                }else{
+                    return  -1;
+                }
             }
         });
 
@@ -158,17 +187,27 @@ public class KMeansUserClustering {
         return isSame(prev_centroids, new_centroids);
     }
 
+    /**
+     * true iff both list are same
+     * @param prev_centroids [String]
+     * @param new_centroids [String]
+     * @return Boolean
+     */
     private static boolean isSame(List<String> prev_centroids, List<String> new_centroids) {
         for (int i = 0; i < prev_centroids.size(); i++) {
             if (!prev_centroids.get(i).equals(new_centroids.get(i))) {
                 return false;
             }
         }
-
+        System.out.println("Converged");
         return true;
     }
 
-
+    /**
+     * generate the Hbase tables required to hold centroids
+     * @param conf Configuration
+     * @throws IOException
+     */
     private static void initCentroidTable(Configuration conf) throws IOException {
         Configuration co = HBaseConfiguration.create(conf);
         HBaseAdmin admin = new HBaseAdmin(co);

@@ -1,11 +1,9 @@
 package kmeans.utils;
 
-import conts.KMeansConts;
 import conts.TableConts;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.KeyValue;
-import org.apache.hadoop.hbase.ZooKeeperConnectionException;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.HTableInterface;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
@@ -17,6 +15,13 @@ import java.util.List;
  */
 public class CentroidUtils {
 
+    /**
+     * List of
+     * @param centroidTable
+     * @param k
+     * @return
+     * @throws IOException
+     */
     public static List<String> getCentroids(HTableInterface centroidTable, int k) throws IOException {
         List<String> list = null;
         for (int i = 0; i < k; i++) {

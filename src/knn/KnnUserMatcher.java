@@ -56,8 +56,8 @@ public class KnnUserMatcher {
                 ResultScanner rs = testTable.getScanner(scan);
                 for (Result r = rs.next(); r != null; r = rs.next()) {
                     byte[] valueObj = r.getValue(family, qual);
-                    String value = new String(valueObj);
-                    System.out.println(value);
+                    String val = new String(valueObj);
+                    System.out.println(val);
                 }
 
             testTable.close();

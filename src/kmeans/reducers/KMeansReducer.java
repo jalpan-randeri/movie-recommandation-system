@@ -10,6 +10,7 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 /**
  * Created by jalpanranderi on 4/12/15.
@@ -34,25 +35,45 @@ public class KMeansReducer extends
 
     public void reduce(Text key, Iterable<Text> values,
                        Context context) throws IOException, InterruptedException {
+
+
+
         int count = 0;
         long sum = 0;
+        ArrayList<Long> list = new ArrayList<>();
         for(Text t : values){
-            count++;
-            sum = sum + Long.parseLong(t.toString());
+            if(!t.toString().contains("NA")) {
+                count++;
+                list.add(Long.parseLong(t.toString()));
+            }
         }
 
-        String centroid = String.valueOf(Math.round(sum / count));
 
         String id = key.toString().split("\\$")[1];
 
-        Put row = new Put(id.getBytes());
-        row.add(TableConts.TABLE_CENTROID_FAMAILY.getBytes(),
-                TableConts.TABLE_CENTROID_COLUMN_ID_CENTROID.getBytes(), centroid.getBytes());
 
-        mTable.put(row);
+        if(count > 0) {
+            String centroid = String.valueOf(getMedian(list, count/2));
+            Put row = new Put(id.getBytes());
+            row.add(TableConts.TABLE_CENTROID_FAMAILY.getBytes(),
+                    TableConts.TABLE_CENTROID_COLUMN_ID_CENTROID.getBytes(), centroid.getBytes());
+            mTable.put(row);
+        }else {
+            Put row = new Put(id.getBytes());
+            String centroid = key.toString().split("\\$")[0];
+            row.add(TableConts.TABLE_CENTROID_FAMAILY.getBytes(),
+                    TableConts.TABLE_CENTROID_COLUMN_ID_CENTROID.getBytes(), centroid.getBytes());
+            mTable.put(row);
+        }
 
 //        context.write(new Text(String.valueOf(id)), new Text(centroid));
     }
+
+    private long getMedian(ArrayList<Long> list, int median_index) {
+        return list.get(median_index);
+    }
+
+
 }
 
 

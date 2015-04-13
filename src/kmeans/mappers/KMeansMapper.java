@@ -77,6 +77,12 @@ public class KMeansMapper extends Mapper<LongWritable, Text, Text, Text> {
 
             context.write(new Text(nearest + "$" + emit_id), new Text(tokens[MovieConts.INDEX_CUST_ID]));
 
+            int id = 0;
+            for(String centroid : centroid_movies.keySet()){
+                context.write(new Text(centroid +"$"+ id), new Text("NA"));
+                id++;
+            }
+
         }
 
     }

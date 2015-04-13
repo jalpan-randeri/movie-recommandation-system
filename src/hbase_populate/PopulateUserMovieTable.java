@@ -52,7 +52,7 @@ public class PopulateUserMovieTable {
         job.setNumReduceTasks(10);
 
         job.setSortComparatorClass(KeyComparator.class);
-        job.setGroupingComparatorClass(UserGroupper.class);
+        job.setGroupingComparatorClass(UserGrouper.class);
 
         job.setOutputKeyClass(MovKey.class);
         job.setOutputValueClass(Text.class);
@@ -67,6 +67,11 @@ public class PopulateUserMovieTable {
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
 
+    /**
+     * generate HBase table required for population in hbase
+     * @param conf Configuration
+     * @throws IOException
+     */
     private static void createHbaseTable(Configuration conf) throws IOException {
         Configuration co = HBaseConfiguration.create(conf);
         HTableDescriptor hd = new HTableDescriptor(TableConts.TABLE_NAME);
@@ -170,9 +175,9 @@ public class PopulateUserMovieTable {
 
 
 
-    public static class UserGroupper extends WritableComparator{
+    public static class UserGrouper extends WritableComparator{
 
-        protected UserGroupper() {
+        protected UserGrouper() {
             super(MovKey.class, true);
         }
 
@@ -236,7 +241,7 @@ public class PopulateUserMovieTable {
             }
 
 
-            Put row = new Put(Bytes.toBytes(key.toString()));
+            Put row = new Put(Bytes.toBytes(key.user));
             row.add(TableConts.TABLE_USR_MOV_COL_FAMILY.getBytes(),
                     TableConts.TABLE_USR_MOV_COLUMN_LIST_MOV.getBytes(), builder.toString().getBytes());
 
