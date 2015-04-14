@@ -32,10 +32,12 @@ public class KMeansMapper extends Mapper<LongWritable, Text, Text, Text> {
 
     protected void setup(Context context) throws IOException,
             InterruptedException {
+        // 1. setup connection with HBase, initial centroid table
         mConnection = HConnectionManager.createConnection(context.getConfiguration());
         mTable = mConnection.getTable(TableConts.TABLE_NAME.getBytes());
         mCentroidsTable = mConnection.getTable(TableConts.TABLE_NAME_CENTROID.getBytes());
 
+        // 2. save the centroid movies into HashMap for fast retrieval
         List<String> centroids = CentroidUtils.getCentroids(mCentroidsTable, KMeansConts.K);
         for (String c : centroids) {
             centroid_movies.put(c, HbaseUtil.getMoviesList(mTable, c));
@@ -45,6 +47,7 @@ public class KMeansMapper extends Mapper<LongWritable, Text, Text, Text> {
 
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
+        // 1. close connection
         mTable.close();
         mCentroidsTable.close();
         mConnection.close();
@@ -54,10 +57,12 @@ public class KMeansMapper extends Mapper<LongWritable, Text, Text, Text> {
     public void map(LongWritable key, Text value, Context context)
             throws IOException, InterruptedException {
         String[] tokens = mParser.parseLine(value.toString());
-
+        // 1. check for valid data
         if (tokens.length == 4) {
+            // 2. get the users list of movie from HBase
             String list_ip = HbaseUtil.getMoviesList(mTable, tokens[MovieConts.INDEX_CUST_ID]);
 
+            // 3. get the closest match from the given centroid to the current user
             String nearest = null;
             double closest = -2;
             int i = 0;
@@ -75,14 +80,8 @@ public class KMeansMapper extends Mapper<LongWritable, Text, Text, Text> {
                 }
             }
 
+            // 4. emmit the match with corresponding id
             context.write(new Text(nearest + "$" + emit_id), new Text(tokens[MovieConts.INDEX_CUST_ID]));
-
-            int id = 0;
-            for(String centroid : centroid_movies.keySet()){
-                context.write(new Text(centroid +"$"+ id), new Text("NA"));
-                id++;
-            }
-
         }
 
     }

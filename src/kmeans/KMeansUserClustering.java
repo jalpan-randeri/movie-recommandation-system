@@ -97,6 +97,11 @@ public class KMeansUserClustering {
         cleanupTables();
     }
 
+    /**
+     * remove the membership table
+     * @param conf Configuration
+     * @throws IOException
+     */
     private static void clearMembership(Configuration conf) throws IOException {
         Configuration co = HBaseConfiguration.create(conf);
         HBaseAdmin admin = new HBaseAdmin(co);
@@ -119,10 +124,12 @@ public class KMeansUserClustering {
      * @throws IOException
      */
     private static void updateCentroids(int k) throws IOException {
+        List<String> prev_centroids = CentroidUtils.getCentroids(mCentroidTable, k);
         List<String> update_centroid = CentroidUtils.getNewCentroids(mNewCentroidTable, k);
+
         String[] centroid = new String[update_centroid.size()];
         for(int i = 0; i < centroid.length; i++){
-            centroid[i] = update_centroid.get(i);
+            centroid[i] = update_centroid.get(i) == null ? prev_centroids.get(i) : update_centroid.get(i);
         }
 
         initializePreviousCentroidTable(k, centroid);

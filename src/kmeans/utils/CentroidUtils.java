@@ -16,10 +16,11 @@ import java.util.List;
 public class CentroidUtils {
 
     /**
-     * List of
-     * @param centroidTable
-     * @param k
-     * @return
+     * List of previous centroids which are assigned befor the start of iteration
+     *
+     * @param centroidTable HBase table interface
+     * @param k Integer total number of centroids
+     * @return List[string] as centroids
      * @throws IOException
      */
     public static List<String> getCentroids(HTableInterface centroidTable, int k) throws IOException {
@@ -44,6 +45,13 @@ public class CentroidUtils {
         return list;
     }
 
+    /**
+     * returns the list of new centroids
+     * @param newCentroidTable HBase table interface
+     * @param k Integer total number of centroids
+     * @return List[String] as new centroids
+     * @throws IOException
+     */
     public static List<String> getNewCentroids(HTableInterface newCentroidTable, int k) throws IOException {
         List<String> list = null;
         for (int i = 0; i < k; i++) {
@@ -59,22 +67,9 @@ public class CentroidUtils {
                 list = new ArrayList<>();
             }
             list.add(centroid);
-
-
         }
-
-
         return list;
 
     }
 
-//    public static void main(String[] args) throws IOException {
-//        Configuration conf = new Configuration();
-//        HConnection con = HConnectionManager.createConnection(conf);
-//        HTableInterface table = con.getTable(TableConts.TABLE_NAME_CENTROID.getBytes());
-//
-//        List<String> list = getCentroids(table, KMeansConts.K);
-//
-//        System.out.println(list);
-//    }
 }
