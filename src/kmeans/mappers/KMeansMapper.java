@@ -3,15 +3,15 @@ package kmeans.mappers;
 import com.opencsv.CSVParser;
 import conts.DatasetConts;
 import conts.KMeansConts;
-import conts.MovieConts;
 import conts.TableConts;
 import kmeans.utils.CentroidUtils;
 import org.apache.hadoop.hbase.client.HConnection;
 import org.apache.hadoop.hbase.client.HConnectionManager;
 import org.apache.hadoop.hbase.client.HTableInterface;
-import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.mapreduce.Mapper;
 import utils.DistanceUtils;
 import utils.HbaseUtil;
 
@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Created by jalpanranderi on 4/12/15.
  */
-public class KMeansMapper extends Mapper<LongWritable, Text, Text, Text> {
+public class KMeansMapper extends TableMapper<Text, Text> {
 
     private HConnection mConnection;
     private HTableInterface mTable;
@@ -54,36 +54,33 @@ public class KMeansMapper extends Mapper<LongWritable, Text, Text, Text> {
 
     }
 
-    public void map(LongWritable key, Text value, Context context)
-            throws IOException, InterruptedException {
-        String[] tokens = mParser.parseLine(value.toString());
-        // 1. check for valid data
-        if (tokens.length == 4) {
-            // 2. get the users list of movie from HBase
-            String list_ip = HbaseUtil.getMoviesList(mTable, tokens[MovieConts.INDEX_CUST_ID]);
+    @Override
+    protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
 
-            // 3. get the closest match from the given centroid to the current user
-            String nearest = null;
-            double closest = -2;
-            int i = 0;
-            int emit_id = 0;
-            for (String centroid : centroid_movies.keySet()) {
-                String list_user = centroid_movies.get(centroid);
-                i++;
-                double similarity = DistanceUtils.cosineSimilarity(list_ip.split(DatasetConts.SEPRATOR_ITEM),
-                        list_user.split(DatasetConts.SEPRATOR_ITEM));
+        // 1. read the current row
+        String list_ip = new String(value.getRow());
 
-                if (similarity > closest) {
-                    nearest = centroid;
-                    closest = similarity;
-                    emit_id = i;
-                }
+        // 2. get the closest match from the given centroid to the current user
+        String nearest = null;
+        double closest = -2;
+        int i = 0;
+        int emit_id = 0;
+        for (String centroid : centroid_movies.keySet()) {
+            String list_user = centroid_movies.get(centroid);
+            i++;
+            // TODO: ArrayIndexOutOfBound Error on distance utils
+            double similarity = DistanceUtils.cosineSimilarity(list_ip.split(DatasetConts.SEPRATOR_ITEM),
+                    list_user.split(DatasetConts.SEPRATOR_ITEM));
+
+            if (similarity > closest) {
+                nearest = centroid;
+                closest = similarity;
+                emit_id = i;
             }
-
-            // 4. emmit the match with corresponding id
-            context.write(new Text(nearest + "$" + emit_id), new Text(tokens[MovieConts.INDEX_CUST_ID]));
         }
 
+        // 3. emmit the match with corresponding id
+        context.write(new Text(nearest + "$" + emit_id), new Text(key.toString()));
     }
 
 

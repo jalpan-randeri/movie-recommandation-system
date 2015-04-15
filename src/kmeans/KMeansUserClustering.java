@@ -26,6 +26,7 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -48,12 +49,9 @@ public class KMeansUserClustering {
             ClassNotFoundException, InterruptedException {
 
         Configuration conf = new Configuration();
-        String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
 
-        if (otherArgs.length != 1) {
-            System.out.println("Usage KMeansUserClustering <input>");
-            System.exit(0);
-        }
+
+
 
         initCentroidTable(conf);
         setupConnectionToTables(conf);
@@ -85,7 +83,14 @@ public class KMeansUserClustering {
             job.setOutputFormatClass(TableOutputFormat.class);
             job.getConfiguration().set(TableOutputFormat.OUTPUT_TABLE, TableConts.TABLE_NAME_NEW_CENTROID);
 
-            FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
+
+            Scan scan = new Scan();
+            scan.setCaching(500);
+            scan.setCacheBlocks(false);
+            TableMapReduceUtil.initTableMapperJob(TableConts.TABLE_NAME, scan, KMeansMapper.class, Text.class, Text.class, job);
+
+
+
             job.waitForCompletion(true);
 
             itr++;
