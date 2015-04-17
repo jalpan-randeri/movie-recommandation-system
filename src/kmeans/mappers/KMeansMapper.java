@@ -11,6 +11,7 @@ import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.Text;
 import utils.DistanceUtils;
 import utils.HbaseUtil;
@@ -58,7 +59,8 @@ public class KMeansMapper extends TableMapper<Text, Text> {
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
 
         // 1. read the current row
-        String list_ip = new String(value.getRow());
+        String list_ip = new String(value.getValue(Bytes.toBytes(TableConts.TABLE_USR_MOV_COL_FAMILY),
+                Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_LIST_MOV)));
 
         // 2. get the closest match from the given centroid to the current user
         String nearest = null;
@@ -80,7 +82,7 @@ public class KMeansMapper extends TableMapper<Text, Text> {
         }
 
         // 3. emmit the match with corresponding id
-        context.write(new Text(nearest + "$" + emit_id), new Text(key.toString()));
+        context.write(new Text(nearest + "$" + emit_id), new Text(value.getRow()));
     }
 
 

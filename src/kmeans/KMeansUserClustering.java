@@ -61,10 +61,10 @@ public class KMeansUserClustering {
         int itr = 0;
 
 
-        String[] centroids = {"1488844", "822109", "885013", "30878", "823519"};
+        String[] centroids = {"1488844", "822109", "885013", "30878", "823519","1711859", "2263586", "4326", "769643", "850327"};
         initializePreviousCentroidTable(KMeansConts.K, centroids);
 
-        while (!isConverged && itr < 10) {
+        while (!isConverged && itr < 500) {
 
             clearMembership(conf);
 
