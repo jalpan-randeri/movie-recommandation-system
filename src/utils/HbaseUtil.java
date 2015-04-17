@@ -24,7 +24,7 @@ public class HbaseUtil {
         query.setMaxVersions(1);
         Result row = table.get(query);
 
-        byte[] cb = row.getValue(Bytes.toBytes(TableConts.TABLE_USR_MOV_COL_FAMILY),
+        byte[] cb = row.getValue(Bytes.toBytes(TableConts.FAMILY_USR_MOV),
                 Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_LIST_MOV));
 
         return Bytes.toString(cb);

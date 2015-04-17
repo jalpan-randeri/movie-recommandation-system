@@ -21,7 +21,6 @@ import kmeans.mappers.KMeansMapper;
 import kmeans.reducers.KMeansReducer;
 import kmeans.utils.CentroidUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -30,8 +29,6 @@ import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.util.GenericOptionsParser;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -87,7 +84,7 @@ public class KMeansUserClustering {
             Scan scan = new Scan();
             scan.setCaching(500);
             scan.setCacheBlocks(false);
-            TableMapReduceUtil.initTableMapperJob(TableConts.TABLE_NAME, scan, KMeansMapper.class, Text.class, Text.class, job);
+            TableMapReduceUtil.initTableMapperJob(TableConts.TABLE_NAME_USR_MOV, scan, KMeansMapper.class, Text.class, Text.class, job);
 
 
 
@@ -113,7 +110,7 @@ public class KMeansUserClustering {
 
 
         HTableDescriptor cluster_table = new HTableDescriptor(TableConts.TABLE_NAME_CLUSTERS);
-        cluster_table.addFamily(new HColumnDescriptor(TableConts.TABLE_CLUSTERS_FAMILY));
+        cluster_table.addFamily(new HColumnDescriptor(TableConts.FAMILY_CLUSTERS));
         if(admin.tableExists(TableConts.TABLE_NAME_CLUSTERS)){
             admin.disableTable(TableConts.TABLE_NAME_CLUSTERS);
             admin.deleteTable(TableConts.TABLE_NAME_CLUSTERS);
@@ -149,8 +146,8 @@ public class KMeansUserClustering {
     private static void initializePreviousCentroidTable(int k, String[] centroids) throws IOException {
         for (int i = 0; i < k; i++) {
             Put row = new Put(String.valueOf(i).getBytes());
-            row.add(TableConts.TABLE_CENTROID_FAMAILY.getBytes(),
-                    TableConts.TABLE_CENTROID_COLUMN_ID_CENTROID.getBytes(), centroids[i].getBytes());
+            row.add(TableConts.FAMILY_CENTROID.getBytes(),
+                    TableConts.KEY_CENTROID_COLUMN_ID.getBytes(), centroids[i].getBytes());
 
             mCentroidTable.put(row);
         }
@@ -245,7 +242,7 @@ public class KMeansUserClustering {
 
         // main centroids locations
         HTableDescriptor hd = new HTableDescriptor(TableConts.TABLE_NAME_CENTROID);
-        hd.addFamily(new HColumnDescriptor(TableConts.TABLE_CENTROID_FAMAILY));
+        hd.addFamily(new HColumnDescriptor(TableConts.FAMILY_CENTROID));
         if (admin.tableExists(TableConts.TABLE_NAME_CENTROID)) {
             admin.disableTable(TableConts.TABLE_NAME_CENTROID);
             admin.deleteTable(TableConts.TABLE_NAME_CENTROID);
@@ -255,7 +252,7 @@ public class KMeansUserClustering {
 
         // new centroid location
         HTableDescriptor hd1 = new HTableDescriptor(TableConts.TABLE_NAME_NEW_CENTROID);
-        hd1.addFamily(new HColumnDescriptor(TableConts.TABLE_NEW_CENTROID_FAMAILY));
+        hd1.addFamily(new HColumnDescriptor(TableConts.FAMILY_NEW_CENTROID));
         if (admin.tableExists(TableConts.TABLE_NAME_NEW_CENTROID)) {
             admin.disableTable(TableConts.TABLE_NAME_NEW_CENTROID);
             admin.deleteTable(TableConts.TABLE_NAME_NEW_CENTROID);

@@ -35,7 +35,7 @@ public class KMeansMapper extends TableMapper<Text, Text> {
             InterruptedException {
         // 1. setup connection with HBase, initial centroid table
         mConnection = HConnectionManager.createConnection(context.getConfiguration());
-        mTable = mConnection.getTable(TableConts.TABLE_NAME.getBytes());
+        mTable = mConnection.getTable(TableConts.TABLE_NAME_USR_MOV.getBytes());
         mCentroidsTable = mConnection.getTable(TableConts.TABLE_NAME_CENTROID.getBytes());
 
         // 2. save the centroid movies into HashMap for fast retrieval
@@ -59,7 +59,7 @@ public class KMeansMapper extends TableMapper<Text, Text> {
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
 
         // 1. read the current row
-        String list_ip = new String(value.getValue(Bytes.toBytes(TableConts.TABLE_USR_MOV_COL_FAMILY),
+        String list_ip = new String(value.getValue(Bytes.toBytes(TableConts.FAMILY_USR_MOV),
                 Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_LIST_MOV)));
 
         // 2. get the closest match from the given centroid to the current user

@@ -5,7 +5,6 @@ import org.apache.hadoop.hbase.client.HConnection;
 import org.apache.hadoop.hbase.client.HConnectionManager;
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 
@@ -69,8 +68,8 @@ public class KMeansReducer extends
      */
     private void saveCentroid(String id, String centroid) throws IOException {
         Put row = new Put(id.getBytes());
-        row.add(TableConts.TABLE_CENTROID_FAMAILY.getBytes(),
-                TableConts.TABLE_CENTROID_COLUMN_ID_CENTROID.getBytes(), centroid.getBytes());
+        row.add(TableConts.FAMILY_CENTROID.getBytes(),
+                TableConts.KEY_CENTROID_COLUMN_ID.getBytes(), centroid.getBytes());
         mTable.put(row);
     }
 
@@ -83,7 +82,7 @@ public class KMeansReducer extends
      */
     private void addToCluster(HTableInterface table, String memebrs, String id) throws IOException {
         Put row = new Put(id.getBytes());
-        row.add(TableConts.TABLE_CLUSTERS_FAMILY.getBytes(),
+        row.add(TableConts.FAMILY_CLUSTERS.getBytes(),
                 TableConts.TABLE_CLUSTERS_COLUMN_MEMBERS.getBytes(),
                 memebrs.getBytes());
         table.put(row);

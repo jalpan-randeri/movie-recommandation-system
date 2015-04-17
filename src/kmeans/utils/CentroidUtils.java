@@ -30,8 +30,8 @@ public class CentroidUtils {
             query.setMaxVersions(1);
             Result row = centroidTable.get(query);
 
-            byte[] cb = row.getValue(Bytes.toBytes(TableConts.TABLE_CENTROID_FAMAILY),
-                    Bytes.toBytes(TableConts.TABLE_CENTROID_COLUMN_ID_CENTROID));
+            byte[] cb = row.getValue(Bytes.toBytes(TableConts.FAMILY_CENTROID),
+                    Bytes.toBytes(TableConts.KEY_CENTROID_COLUMN_ID));
 
             String centroid = Bytes.toString(cb);
             if (list == null) {
@@ -59,8 +59,8 @@ public class CentroidUtils {
             query.setMaxVersions(1);
             Result row = newCentroidTable.get(query);
 
-            byte[] cb = row.getValue(Bytes.toBytes(TableConts.TABLE_NEW_CENTROID_FAMAILY),
-                    Bytes.toBytes(TableConts.TABLE_NEW_CENTROID_COLUMN_ID_CENTROID));
+            byte[] cb = row.getValue(Bytes.toBytes(TableConts.FAMILY_NEW_CENTROID),
+                    Bytes.toBytes(TableConts.KEY_NEW_CENTROID_CENTROID));
 
             String centroid = Bytes.toString(cb);
             if (list == null) {

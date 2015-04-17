@@ -2,11 +2,6 @@ package utils;
 
 import conts.DatasetConts;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-
 /**
  * Created by jalpanranderi on 4/11/15.
  */
@@ -53,7 +48,7 @@ public class DistanceUtils {
      * @return int rating square;
      */
     private static double getRating(String token) {
-        return Double.parseDouble(token.split(DatasetConts.SEPRATOR_VALUE)[1]
+        return Double.parseDouble(token.split(DatasetConts.SEPARATOR_VALUE)[1]
                 .replace(DatasetConts.SEPRATOR_ITEM, ""));
     }
 
@@ -63,7 +58,7 @@ public class DistanceUtils {
      * @return Long representing movie_id
      */
     private static long getMovie(String token){
-        return Long.parseLong(token.split(DatasetConts.SEPRATOR_VALUE)[0]);
+        return Long.parseLong(token.split(DatasetConts.SEPARATOR_VALUE)[0]);
     }
 
 
