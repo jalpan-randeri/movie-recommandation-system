@@ -1,15 +1,11 @@
-package rjoin.hbase;
-
+package rjoin.hdfs;
 
 import com.opencsv.CSVParser;
 import conts.DatasetConts;
 import conts.MovieConts;
-import conts.TableConts;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.*;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
@@ -24,11 +20,10 @@ import org.apache.hadoop.util.GenericOptionsParser;
 import java.io.*;
 import java.util.HashMap;
 
-
 /**
  * Created by jalpanranderi on 4/19/15.
  */
-public class HPopulateMovies {
+public class Replicated {
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
 
@@ -45,10 +40,8 @@ public class HPopulateMovies {
         //  2 - Output directory
         DistributedCache.addCacheFile(new Path(otherArgs[0]).toUri(), conf);
 
-        generateTable(conf);
-
         Job job = new Job(conf, "Replicated join to populate database");
-        job.setJarByClass(HPopulateMovies.class);
+        job.setJarByClass(Replicated.class);
         job.setNumReduceTasks(10);
         job.setMapperClass(HMoviesMapper.class);
         job.setReducerClass(HMoviesReducer.class);
@@ -60,27 +53,6 @@ public class HPopulateMovies {
         FileOutputFormat.setOutputPath(job, new Path(otherArgs[2]));
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
-    }
-
-    /**
-     * Generate HBase table for the data set storage
-     * @param conf Configuration
-     */
-    private static void generateTable(Configuration conf) throws IOException {
-        Configuration co = HBaseConfiguration.create(conf);
-        HTableDescriptor hd = new HTableDescriptor(TableConts.TABLE_NAME_DATASET);
-        hd.addFamily(new HColumnDescriptor(TableConts.COL_TBL_DATASET_AVG_RATING));
-        hd.addFamily(new HColumnDescriptor(TableConts.COL_TBL_DATASET_AVG_YEAR));
-        hd.addFamily(new HColumnDescriptor(TableConts.COL_TBL_DATASET_MOVIE_LIST));
-        HBaseAdmin admin = new HBaseAdmin(co);
-
-        if(admin.tableExists(TableConts.TABLE_NAME_DATASET)){
-            admin.disableTable(TableConts.TABLE_NAME_DATASET);
-            admin.deleteTable(TableConts.TABLE_NAME_DATASET);
-        }
-
-        admin.createTable(hd);
-        admin.close();
     }
 
 
