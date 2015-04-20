@@ -30,9 +30,12 @@ public class TableConts {
 
 
     public static final String TABLE_NAME_DATASET = "TABLE_NETFLIX_DATASET";
-//    public static final String FAMILY_TBL_DATASET = "netflix_users";
+    public static final String FAMILY_TBL_DATASET = "netflix_dataset";
     public static final String KEY_TBL_DATASET = "KEY_USR_ID";
     public static final String COL_TBL_DATASET_AVG_RATING = "AVG_RATING";
     public static final String COL_TBL_DATASET_AVG_YEAR = "AVG_YEAR";
     public static final String COL_TBL_DATASET_MOVIE_LIST = "MOVIES";
+
+
+    public static final int MB_100 = 102400;
 }

@@ -10,6 +10,13 @@ import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
+import org.apache.hadoop.hbase.client.HConnectionManager;
+import org.apache.hadoop.hbase.client.HTable;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
+import org.apache.hadoop.hbase.thrift.generated.Hbase;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
@@ -35,8 +42,8 @@ public class HPopulateMovies {
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(args).getRemainingArgs();
 
-        if (otherArgs.length != 3) {
-            System.out.println("Usage HPopulateMovies <Distributed Cache> <Input> <Output>");
+        if (otherArgs.length != 2) {
+            System.out.println("Usage HPopulateMovies <Distributed Cache> <Input>");
             System.exit(1);
         }
 
@@ -56,8 +63,10 @@ public class HPopulateMovies {
         job.setOutputKeyClass(LongWritable.class);
         job.setOutputValueClass(YearRatingNameValue.class);
 
+        job.setOutputFormatClass(TableOutputFormat.class);
+
         FileInputFormat.setInputPaths(job, new Path(otherArgs[1]));
-        FileOutputFormat.setOutputPath(job, new Path(otherArgs[2]));
+        job.getConfiguration().set(TableOutputFormat.OUTPUT_TABLE, TableConts.TABLE_NAME_DATASET);
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
@@ -69,9 +78,7 @@ public class HPopulateMovies {
     private static void generateTable(Configuration conf) throws IOException {
         Configuration co = HBaseConfiguration.create(conf);
         HTableDescriptor hd = new HTableDescriptor(TableConts.TABLE_NAME_DATASET);
-        hd.addFamily(new HColumnDescriptor(TableConts.COL_TBL_DATASET_AVG_RATING));
-        hd.addFamily(new HColumnDescriptor(TableConts.COL_TBL_DATASET_AVG_YEAR));
-        hd.addFamily(new HColumnDescriptor(TableConts.COL_TBL_DATASET_MOVIE_LIST));
+        hd.addFamily(new HColumnDescriptor(TableConts.FAMILY_TBL_DATASET));
         HBaseAdmin admin = new HBaseAdmin(co);
 
         if(admin.tableExists(TableConts.TABLE_NAME_DATASET)){
@@ -149,45 +156,58 @@ public class HPopulateMovies {
 
     public static class HMoviesReducer extends Reducer<LongWritable, YearRatingNameValue, LongWritable, Text> {
 
+        private HTable mTable;
+
+
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            mTable = new HTable(HBaseConfiguration.create(), TableConts.TABLE_NAME_DATASET);
+            mTable.setAutoFlush(true);
+            mTable.setWriteBufferSize(TableConts.MB_100);
+        }
+
+
+
         @Override
         protected void reduce(LongWritable key, Iterable<YearRatingNameValue> values, Context context) throws IOException, InterruptedException {
             long avg_year = 0;
             long count = 0;
             long avg_rating = 0;
 
-            StringBuilder builder = new StringBuilder();
+            StringBuilder movies = new StringBuilder();
             for (YearRatingNameValue v : values) {
                 avg_year = avg_year + v.year;
                 avg_rating = avg_rating + v.rating;
                 count++;
-                builder.append(v.name);
-                builder.append(DatasetConts.SEPRATOR_VALUE);
+                movies.append(v.name);
+                movies.append(DatasetConts.SEPRATOR_VALUE);
             }
+            movies.deleteCharAt(movies.length() - 1);
 
             avg_rating = avg_rating / count;
             avg_year = avg_year / count;
 
-            context.write(key, generateValue(avg_rating, avg_year, builder.toString()));
+            Put row = new Put(Bytes.toBytes(key.get()));
+            row.add(Bytes.toBytes(TableConts.FAMILY_TBL_DATASET),
+                    Bytes.toBytes(TableConts.COL_TBL_DATASET_AVG_RATING),
+                    Bytes.toBytes(avg_rating));
+            row.add(Bytes.toBytes(TableConts.FAMILY_TBL_DATASET),
+                    Bytes.toBytes(TableConts.COL_TBL_DATASET_AVG_YEAR),
+                    Bytes.toBytes(avg_year));
+            row.add(Bytes.toBytes(TableConts.FAMILY_TBL_DATASET),
+                    Bytes.toBytes(TableConts.COL_TBL_DATASET_MOVIE_LIST),
+                    Bytes.toBytes(movies.toString()));
+
+            mTable.put(row);
         }
 
-        /**
-         * generate value will create a string for avg_rating, avg_year, movie_list
-         *
-         * @param avg_rating  Long average rating
-         * @param avg_year    Long average year
-         * @param movies_list String
-         * @return Text
-         */
-        private Text generateValue(long avg_rating, long avg_year, String movies_list) {
-            StringBuilder builder = new StringBuilder();
-            builder.append(avg_rating);
-            builder.append(DatasetConts.SEPRATOR_VALUE);
-            builder.append(avg_year);
-            builder.append(DatasetConts.SEPRATOR_VALUE);
-            builder.append(movies_list);
 
-            return new Text(builder.toString());
+        @Override
+        protected void cleanup(Context context) throws IOException, InterruptedException {
+            mTable.close();
         }
+
+
     }
 
 
