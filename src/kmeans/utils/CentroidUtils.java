@@ -31,7 +31,7 @@ public class CentroidUtils {
             Result row = centroidTable.get(query);
 
             byte[] cb = row.getValue(Bytes.toBytes(TableConts.FAMILY_CENTROID),
-                    Bytes.toBytes(TableConts.KEY_CENTROID_COLUMN_ID));
+                    Bytes.toBytes(TableConts.KEY_CENTROID_COL_ID));
 
             String centroid = Bytes.toString(cb);
             if (list == null) {

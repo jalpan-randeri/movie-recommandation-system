@@ -69,7 +69,7 @@ public class KMeansReducer extends
     private void saveCentroid(String id, String centroid) throws IOException {
         Put row = new Put(id.getBytes());
         row.add(TableConts.FAMILY_CENTROID.getBytes(),
-                TableConts.KEY_CENTROID_COLUMN_ID.getBytes(), centroid.getBytes());
+                TableConts.KEY_NEW_CENTROID_CENTROID.getBytes(), centroid.getBytes());
         mTable.put(row);
     }
 

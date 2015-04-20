@@ -133,7 +133,7 @@ public class Replicated {
                 avg_rating = avg_rating + v.rating;
                 count++;
                 builder.append(v.name);
-                builder.append(DatasetConts.SEPRATOR_VALUE);
+                builder.append(DatasetConts.SEPARATOR);
             }
 
             avg_rating = avg_rating / count;
@@ -153,9 +153,9 @@ public class Replicated {
         private Text generateValue(long avg_rating, long avg_year, String movies_list) {
             StringBuilder builder = new StringBuilder();
             builder.append(avg_rating);
-            builder.append(DatasetConts.SEPRATOR_VALUE);
+            builder.append(DatasetConts.SEPARATOR);
             builder.append(avg_year);
-            builder.append(DatasetConts.SEPRATOR_VALUE);
+            builder.append(DatasetConts.SEPARATOR);
             builder.append(movies_list);
 
             return new Text(builder.toString());

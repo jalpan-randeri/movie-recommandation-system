@@ -147,7 +147,7 @@ public class KMeansUserClustering {
         for (int i = 0; i < k; i++) {
             Put row = new Put(String.valueOf(i).getBytes());
             row.add(TableConts.FAMILY_CENTROID.getBytes(),
-                    TableConts.KEY_CENTROID_COLUMN_ID.getBytes(), centroids[i].getBytes());
+                    TableConts.KEY_CENTROID_COL_ID.getBytes(), centroids[i].getBytes());
 
             mCentroidTable.put(row);
         }
