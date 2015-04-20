@@ -170,33 +170,33 @@ public class HPopulateMovies {
 
         @Override
         protected void reduce(LongWritable key, Iterable<YearRatingNameValue> values, Context context) throws IOException, InterruptedException {
-            long avg_year = 0;
+            long total_year = 0;
             long count = 0;
-            long avg_rating = 0;
+            long total_rating = 0;
 
             StringBuilder movies = new StringBuilder();
             for (YearRatingNameValue v : values) {
-                avg_year = avg_year + v.year;
-                avg_rating = avg_rating + v.rating;
+                total_year = total_year + v.year;
+                total_rating = total_rating + v.rating;
                 count++;
                 movies.append(v.name);
                 movies.append(DatasetConts.SEPRATOR_VALUE);
             }
             movies.deleteCharAt(movies.length() - 1);
 
-            avg_rating = avg_rating / count;
-            avg_year = avg_year / count;
+            int avg_rating = Math.round(total_rating / count);
+            int avg_year = Math.round(total_year / count);
 
             Put row = new Put(Bytes.toBytes(key.get()));
-            row.add(Bytes.toBytes(TableConts.FAMILY_TBL_DATASET),
-                    Bytes.toBytes(TableConts.COL_TBL_DATASET_AVG_RATING),
+            row.add(TableConts.FAMILY_TBL_DATASET.getBytes(),
+                    TableConts.COL_TBL_DATASET_AVG_RATING.getBytes(),
                     Bytes.toBytes(avg_rating));
-            row.add(Bytes.toBytes(TableConts.FAMILY_TBL_DATASET),
-                    Bytes.toBytes(TableConts.COL_TBL_DATASET_AVG_YEAR),
+            row.add(TableConts.FAMILY_TBL_DATASET.getBytes(),
+                    TableConts.COL_TBL_DATASET_AVG_YEAR.getBytes(),
                     Bytes.toBytes(avg_year));
-            row.add(Bytes.toBytes(TableConts.FAMILY_TBL_DATASET),
-                    Bytes.toBytes(TableConts.COL_TBL_DATASET_MOVIE_LIST),
-                    Bytes.toBytes(movies.toString()));
+            row.add(TableConts.FAMILY_TBL_DATASET.getBytes(),
+                    TableConts.COL_TBL_DATASET_MOVIE_LIST.getBytes(),
+                    movies.toString().getBytes());
 
             mTable.put(row);
         }
