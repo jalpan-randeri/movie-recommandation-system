@@ -86,7 +86,7 @@ public class PopulateUserMovieTable {
      * @throws IOException
      */
     private static void createTable(HBaseAdmin admin, String table_name, String family) throws IOException {
-        HTableDescriptor hd = new HTableDescriptor(TableConts.TABLE_NAME_USR_MOV);
+        HTableDescriptor hd = new HTableDescriptor(table_name);
         hd.addFamily(new HColumnDescriptor(family));
         if(admin.tableExists(table_name)){
             admin.disableTable(table_name);

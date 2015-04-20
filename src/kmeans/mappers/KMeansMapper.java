@@ -58,31 +58,33 @@ public class KMeansMapper extends TableMapper<Text, Text> {
     @Override
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
 
-        // 1. read the current row
-        String list_ip = new String(value.getValue(Bytes.toBytes(TableConts.FAMILY_USR_MOV),
-                Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_LIST_MOV)));
+        // TODO: Change the logic that matches with new table
 
-        // 2. get the closest match from the given centroid to the current user
-        String nearest = null;
-        double closest = -2;
-        int i = 0;
-        int emit_id = 0;
-        for (String centroid : centroid_movies.keySet()) {
-            String list_user = centroid_movies.get(centroid);
-            i++;
-            // TODO: ArrayIndexOutOfBound Error on distance utils
-            double similarity = DistanceUtils.cosineSimilarity(list_ip.split(DatasetConts.SEPRATOR_ITEM),
-                    list_user.split(DatasetConts.SEPRATOR_ITEM));
-
-            if (similarity > closest) {
-                nearest = centroid;
-                closest = similarity;
-                emit_id = i;
-            }
-        }
-
-        // 3. emmit the match with corresponding id
-        context.write(new Text(nearest + "$" + emit_id), new Text(value.getRow()));
+//        // 1. read the current row
+//        String list_ip = new String(value.getValue(Bytes.toBytes(TableConts.FAMILY_USR_MOV),
+//                Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_LIST_MOV)));
+//
+//        // 2. get the closest match from the given centroid to the current user
+//        String nearest = null;
+//        double closest = -2;
+//        int i = 0;
+//        int emit_id = 0;
+//        for (String centroid : centroid_movies.keySet()) {
+//            String list_user = centroid_movies.get(centroid);
+//            i++;
+//            // TODO: ArrayIndexOutOfBound Error on distance utils
+//            double similarity = DistanceUtils.cosineSimilarity(list_ip.split(DatasetConts.SEPRATOR_ITEM),
+//                    list_user.split(DatasetConts.SEPRATOR_ITEM));
+//
+//            if (similarity > closest) {
+//                nearest = centroid;
+//                closest = similarity;
+//                emit_id = i;
+//            }
+//        }
+//
+//        // 3. emmit the match with corresponding id
+//        context.write(new Text(nearest + "$" + emit_id), new Text(value.getRow()));
     }
 
 
