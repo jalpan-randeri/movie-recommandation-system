@@ -19,14 +19,16 @@ public class TableConts {
     // KMeans centroid table
     public static final String TABLE_NAME_CENTROID = "TABLE_USR_CENTROID";
     public static final String FAMILY_CENTROID = "centroids_family";
-    public static final String KEY_CENTROID_COL_ID = "CENTROID_ID";
-    public static final String TABLE_CENTROID_COL_CENTROID = "CENTROID_VALUE";
+//    public static final String KEY_CENTROID_COL_ID = "CENTROID_ID";
+    public static final String COL_TBL_CENTROID_COL_X = "X";
+    public static final String COL_TBL_CENTROID_COL_Y = "Y";
 
     // KMeans new centroids table
     public static final String TABLE_NAME_NEW_CENTROID = "TABLE_NEW_USR_CENTROID";
     public static final String FAMILY_NEW_CENTROID = "centroids_family";
-    public static final String KEY_NEW_CENTROID_CENTROID = "CENTROID_ID";
-    public static final String TABLE_NEW_CENTROID_COL_CENTROID = "CENTROID_VALUE";
+//    public static final String KEY_NEW_CENTROID_CENTROID = "CENTROID_ID";
+    public static final String COL_TBL_NEW_CENTROID_COL_X = "X";
+    public static final String COL_TBL_NEW_CENTROID_COL_Y = "Y";
 
     // KMeans user cluster membership table
     public static final String TABLE_NAME_CLUSTERS = "TABLE_USR_CLUSTER";

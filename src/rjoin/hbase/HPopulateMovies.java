@@ -15,7 +15,6 @@ import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
@@ -127,9 +126,9 @@ public class HPopulateMovies {
 
             long emit_key = Long.parseLong(tokens[MovieConts.INDEX_CUST_ID]);
 
-            int movie_year = mCachedYear.get(tokens[MovieConts.INDEX_R_MOVIE_ID]);
+//            int movie_year = mCachedYear.get(tokens[MovieConts.INDEX_R_MOVIE_ID]);
             int rating_year = getYear(tokens[MovieConts.INDEX_MOVIE_RATING_YEAR]);
-            int year = rating_year - movie_year;
+            int year = rating_year;// - movie_year;
 
             int rating = Integer.parseInt(tokens[MovieConts.INDEX_RATING]);
             String name = mCachedNames.get(tokens[MovieConts.INDEX_MOVIE_ID]);
@@ -168,9 +167,9 @@ public class HPopulateMovies {
 
         @Override
         protected void reduce(LongWritable key, Iterable<YearRatingNameValue> values, Context context) throws IOException, InterruptedException {
-            long total_year = 0;
+            double total_year = 0;
             long count = 0;
-            long total_rating = 0;
+            double total_rating = 0;
 
             StringBuilder movies = new StringBuilder();
             for (YearRatingNameValue v : values) {
@@ -182,16 +181,18 @@ public class HPopulateMovies {
             }
             movies.deleteCharAt(movies.length() - 1);
 
-            int avg_rating = Math.round(total_rating / count);
-            int avg_year = Math.round(total_year / count);
+            double avg_rating = Math.round(total_rating / count);
+            double avg_year = Math.round(total_year / count);
 
-            Put row = new Put(Bytes.toBytes(key.get()));
+            Put row = new Put(String.valueOf(key.get()).getBytes());
             row.add(TableConts.FAMILY_TBL_DATASET.getBytes(),
                     TableConts.COL_TBL_DATASET_AVG_RATING.getBytes(),
-                    Bytes.toBytes(avg_rating));
+                    String.valueOf(avg_rating).getBytes());
+
             row.add(TableConts.FAMILY_TBL_DATASET.getBytes(),
                     TableConts.COL_TBL_DATASET_AVG_YEAR.getBytes(),
-                    Bytes.toBytes(avg_year));
+                    String.valueOf(avg_year).getBytes());
+
             row.add(TableConts.FAMILY_TBL_DATASET.getBytes(),
                     TableConts.COL_TBL_DATASET_MOVIE_LIST.getBytes(),
                     movies.toString().getBytes());
