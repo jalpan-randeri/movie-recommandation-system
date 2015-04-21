@@ -5,5 +5,6 @@
 	<contentEntry url="file://$MODULE_DIR$"/>
 	<levels>
 		<level name="opencsv-3.2" value="project"/>
+		<level name="org.apache.commons:commons-lang3:3.0" value="project"/>
 	</levels>
 </component>

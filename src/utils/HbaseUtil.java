@@ -1,6 +1,7 @@
 package utils;
 
 import conts.TableConts;
+import kmeans.model.RatYear;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Result;
@@ -24,9 +25,32 @@ public class HbaseUtil {
         query.setMaxVersions(1);
         Result row = table.get(query);
 
-        byte[] cb = row.getValue(Bytes.toBytes(TableConts.TABLE_USR_MOV_COL_FAMILY),
-                Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_LIST_MOV));
+        byte[] cb = row.getValue(Bytes.toBytes(TableConts.FAMILY_TBL_DATASET),
+                Bytes.toBytes(TableConts.COL_TBL_DATASET_MOVIE_LIST));
 
         return Bytes.toString(cb);
+    }
+
+
+    /**
+     * get the average rating and movie year of the user
+     * @param table HTable interface to access the hbase
+     * @param userid String user id
+     * @return RatYear object as the pair of the average rating and average year;
+     * @throws IOException
+     */
+    public static RatYear getUserAvgRatingYear(HTableInterface table, long userid) throws IOException {
+        Get query = new Get(Bytes.toBytes(userid));
+        query.setMaxVersions(1);
+        Result row = table.get(query);
+
+        byte[] b_rating = row.getValue(Bytes.toBytes(TableConts.FAMILY_TBL_DATASET),
+                Bytes.toBytes(TableConts.COL_TBL_DATASET_AVG_RATING));
+
+        byte[] b_year = row.getValue(Bytes.toBytes(TableConts.FAMILY_TBL_DATASET),
+                Bytes.toBytes(TableConts.COL_TBL_DATASET_AVG_YEAR));
+
+
+        return new RatYear(Bytes.toInt(b_year), Bytes.toInt(b_rating));
     }
 }

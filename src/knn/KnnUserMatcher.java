@@ -1,7 +1,6 @@
 package knn;
 
 import java.io.IOException;
-import java.util.Objects;
 
 import conts.*;
 import org.apache.hadoop.conf.Configuration;
@@ -11,23 +10,12 @@ import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.client.Scan;
-import org.apache.hadoop.hbase.filter.CompareFilter;
-import org.apache.hadoop.hbase.filter.FilterList;
-import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
-import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
-import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
@@ -43,13 +31,13 @@ public class KnnUserMatcher {
     public static class KNNMapper extends Mapper<Object, Text, Text, Text> {
         public void map(Object key, Text value, Context context) throws IOException {
             Configuration config = HBaseConfiguration.create();
-            HTable testTable = new HTable(config, TableConts.TABLE_NAME);
+            HTable testTable = new HTable(config, TableConts.TABLE_NAME_USR_MOV);
 
                 Scan scan = new Scan();
-                scan.addColumn(Bytes.toBytes(TableConts.TABLE_USR_MOV_COL_FAMILY), Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_USR_ID));
-                scan.addColumn(Bytes.toBytes(TableConts.TABLE_USR_MOV_COL_FAMILY), Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_LIST_MOV));
+                scan.addColumn(Bytes.toBytes(TableConts.FAMILY_USR_MOV), Bytes.toBytes(TableConts.KEY_USR_MOV_USR));
+                scan.addColumn(Bytes.toBytes(TableConts.FAMILY_USR_MOV), Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_LIST_MOV));
 
-                byte[] family = Bytes.toBytes(TableConts.TABLE_USR_MOV_COL_FAMILY);
+                byte[] family = Bytes.toBytes(TableConts.FAMILY_USR_MOV);
                 byte[] qual = Bytes.toBytes("a");
 
                 scan.addColumn(family, qual);

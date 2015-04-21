@@ -18,8 +18,8 @@ public class CentroidGrouppingComparator extends WritableComparator {
         Text i1 = (Text) a;
         Text i2 = (Text) b;
 
-        int c1 = Integer.parseInt(a.toString().split("\\$")[1]);
-        int c2 = Integer.parseInt(b.toString().split("\\$")[1]);
+        int c1 = Integer.parseInt(a.toString());
+        int c2 = Integer.parseInt(b.toString());
 
         return c1 - c2;
     }

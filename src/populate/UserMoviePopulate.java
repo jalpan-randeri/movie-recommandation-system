@@ -1,8 +1,8 @@
 package populate;
 
 import com.opencsv.CSVParser;
+import conts.DatasetConts;
 import conts.MovieConts;
-import conts.UserConts;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.LongWritable;
@@ -83,7 +83,7 @@ public class UserMoviePopulate {
         public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             for(Text v : values){
                 builder.append(v.toString());
-                builder.append(UserConts.SEPRATOR_ITEM);
+                builder.append(DatasetConts.SEPARATOR);
             }
 
             context.write(key, new Text(builder.toString()));
@@ -91,4 +91,5 @@ public class UserMoviePopulate {
             builder.setLength(0);
         }
     }
+
 }

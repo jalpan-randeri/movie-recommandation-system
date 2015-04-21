@@ -2,11 +2,6 @@ package utils;
 
 import conts.DatasetConts;
 
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-
 /**
  * Created by jalpanranderi on 4/11/15.
  */
@@ -53,8 +48,8 @@ public class DistanceUtils {
      * @return int rating square;
      */
     private static double getRating(String token) {
-        return Double.parseDouble(token.split(DatasetConts.SEPRATOR_VALUE)[1]
-                .replace(DatasetConts.SEPRATOR_ITEM, ""));
+        return Double.parseDouble(token.split(DatasetConts.SEPARATOR)[1]
+                .replace(DatasetConts.SEPARATOR, ""));
     }
 
     /**
@@ -63,7 +58,7 @@ public class DistanceUtils {
      * @return Long representing movie_id
      */
     private static long getMovie(String token){
-        return Long.parseLong(token.split(DatasetConts.SEPRATOR_VALUE)[0]);
+        return Long.parseLong(token.split(DatasetConts.SEPARATOR)[0]);
     }
 
 
@@ -120,11 +115,30 @@ public class DistanceUtils {
     }
 
 
-    public static void main(String[] args) {
-        String[] list1 = {"1,4.75", "2,4.5", "3,5", "4,4.25", "5,4"};
-        String[] list2 = {"1,4", "2,3", "3,5", "4,2", "5,1"};
-
-        System.out.println(cosineSimilarity(list1, list2));
+    /**
+     * returns manhattan distance of two vectors
+     * @param x1 Integer as Average1
+     * @param y1 Integer as Rating1
+     * @param x2 Integer as Average2
+     * @param y2 Integer as Rating2
+     * @return Integer manhattan distance of the two vectors
+     */
+    public static int getManhattanDistance(int x1, int y1, int x2, int y2){
+        return Math.abs(x1 - x2) + Math.abs(y1 - y2);
     }
+
+
+    /**
+     * returns eculidean distance of two vectors
+     * @param x1 double as Average1
+     * @param y1 double as Rating1
+     * @param x2 double as Average2
+     * @param y2 double as Rating2
+     * @return Integer manhattan distance of the two vectors
+     */
+    public static double getEucilideanDistance(double x1, double y1, double x2, double y2){
+        return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+    }
+
 
 }

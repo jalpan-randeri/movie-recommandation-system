@@ -1,22 +1,27 @@
 package kmeans.reducers;
 
+import conts.DatasetConts;
 import conts.TableConts;
+import kmeans.model.EmitValue;
 import org.apache.hadoop.hbase.client.HConnection;
 import org.apache.hadoop.hbase.client.HConnectionManager;
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by jalpanranderi on 4/12/15.
  */
 public class KMeansReducer extends
-        Reducer<Text, Text, Text, Text> {
+        Reducer<IntWritable, EmitValue, Text, Text> {
 
     HConnection mConnection;
     HTableInterface mTable;
@@ -24,6 +29,7 @@ public class KMeansReducer extends
 
     @Override
     protected void setup(Context context) throws IOException, InterruptedException {
+        // setup connection with HBase and cluster table and new centroid table
         mConnection =  HConnectionManager.createConnection(context.getConfiguration());
         mTable = mConnection.getTable(TableConts.TABLE_NAME_NEW_CENTROID.getBytes());
         mClusters = mConnection.getTable(TableConts.TABLE_NAME_CLUSTERS.getBytes());
@@ -31,62 +37,77 @@ public class KMeansReducer extends
 
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
+        // clear connection
         mTable.close();
         mClusters.close();
         mConnection.close();
     }
 
-    public void reduce(Text key, Iterable<Text> values,
+    @Override
+    public void reduce(IntWritable key, Iterable<EmitValue> values,
                        Context context) throws IOException, InterruptedException {
+        // 1 retrieve the cluster index
+        int id = key.get();
 
-        String id = key.toString().split("\\$")[1];
-
-
-        int count = 0;
-        long sum = 0;
-        ArrayList<Long> list = new ArrayList<>();
-        for(Text t : values){
-            if(!t.toString().contains("NA")) {
-                count++;
-                list.add(Long.parseLong(t.toString()));
-            }
+        // 2. get all the members
+        ArrayList<EmitValue> list = new ArrayList<>();
+        double total_year = 0;
+        double total_rating = 0;
+        for(EmitValue t : values){
+            list.add(t);
+            total_year = total_year + t.year.get();
+            total_rating = total_rating + t.rating.get();
         }
 
+        // 3. find the new centroid as average of cluster
+        int new_rating = (int) (total_rating / list.size());
+        int new_year = (int) (total_year / list.size());
 
 
+        // 4. save centroid
+        saveCentroid(String.valueOf(id), new_rating, new_year);
 
-        if(count > 0) {
-            String centroid = String.valueOf(getMedian(list, count/2));
-            Put row = new Put(id.getBytes());
-            row.add(TableConts.TABLE_CENTROID_FAMAILY.getBytes(),
-                    TableConts.TABLE_CENTROID_COLUMN_ID_CENTROID.getBytes(), centroid.getBytes());
-            mTable.put(row);
-
-            addToCluster(mClusters, list.toString(), id);
-
-        }else {
-            Put row = new Put(id.getBytes());
-            String centroid = key.toString().split("\\$")[0];
-            row.add(TableConts.TABLE_CENTROID_FAMAILY.getBytes(),
-                    TableConts.TABLE_CENTROID_COLUMN_ID_CENTROID.getBytes(),
-                    centroid.getBytes());
-            mTable.put(row);
-        }
-
-//        context.write(new Text(String.valueOf(id)), new Text(centroid));
+        // 5. save members
+        addToCluster(mClusters, list, String.valueOf(id));
     }
 
-    private void addToCluster(HTableInterface table, String s, String id) throws IOException {
+    /**
+     * save the given centroid into the centroid table
+     * @param id String centroid id
+     * @throws IOException
+     */
+    private void saveCentroid(String id, int x, int y) throws IOException {
         Put row = new Put(id.getBytes());
-        row.add(TableConts.TABLE_CLUSTERS_FAMILY.getBytes(),
+        row.add(TableConts.FAMILY_CENTROID.getBytes(),
+                TableConts.COL_TBL_CENTROID_COL_X.getBytes(), String.valueOf(x).getBytes());
+        row.add(TableConts.FAMILY_CENTROID.getBytes(),
+                TableConts.COL_TBL_CENTROID_COL_Y.getBytes(), String.valueOf(y).getBytes());
+        mTable.put(row);
+    }
+
+    /**
+     * write members to cluster tables
+     * @param table HBase table interface
+     * @param list List[EmitValue] members
+     * @param id String cluster id
+     * @throws IOException
+     */
+    private void addToCluster(HTableInterface table, List<EmitValue> list, String id) throws IOException {
+
+        StringBuilder builder = new StringBuilder();
+        for(EmitValue e : list){
+            builder.append(e.user_id);
+            builder.append(DatasetConts.SEPARATOR);
+        }
+
+        Put row = new Put(id.getBytes());
+        row.add(TableConts.FAMILY_CLUSTERS.getBytes(),
                 TableConts.TABLE_CLUSTERS_COLUMN_MEMBERS.getBytes(),
-                s.getBytes());
+                builder.toString().getBytes());
         table.put(row);
     }
 
-    private long getMedian(ArrayList<Long> list, int median_index) {
-        return list.get(median_index);
-    }
+
 
 
 }

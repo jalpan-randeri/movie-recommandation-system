@@ -1,6 +1,7 @@
 package kmeans.utils;
 
 import conts.TableConts;
+import hbase_populate.model.Centroid;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Result;
@@ -16,65 +17,64 @@ import java.util.List;
 public class CentroidUtils {
 
     /**
-     * List of
-     * @param centroidTable
-     * @param k
-     * @return
+     * List of previous centroids which are assigned befor the start of iteration
+     *
+     * @param centroidTable HBase table interface
+     * @param k Integer total number of centroids
+     * @return List[string] as centroids
      * @throws IOException
      */
-    public static List<String> getCentroids(HTableInterface centroidTable, int k) throws IOException {
-        List<String> list = null;
+    public static List<Centroid> getCentroids(HTableInterface centroidTable, int k) throws IOException {
+        List<Centroid> list = new ArrayList<>();
         for (int i = 0; i < k; i++) {
             Get query = new Get(String.valueOf(i).getBytes());
             query.setMaxVersions(1);
             Result row = centroidTable.get(query);
 
-            byte[] cb = row.getValue(Bytes.toBytes(TableConts.TABLE_CENTROID_FAMAILY),
-                    Bytes.toBytes(TableConts.TABLE_CENTROID_COLUMN_ID_CENTROID));
+            byte[] cx = row.getValue(Bytes.toBytes(TableConts.FAMILY_CENTROID),
+                    Bytes.toBytes(TableConts.COL_TBL_CENTROID_COL_X));
 
-            String centroid = Bytes.toString(cb);
-            if (list == null) {
-                list = new ArrayList<>();
-            }
-            list.add(centroid);
+            byte[] cy = row.getValue(Bytes.toBytes(TableConts.FAMILY_CENTROID),
+                    Bytes.toBytes(TableConts.COL_TBL_CENTROID_COL_Y));
 
+            String x = Bytes.toString(cx);
+            String y = Bytes.toString(cy);
 
+            list.add(new Centroid(Double.parseDouble(x), Double.parseDouble(y)));
         }
 
         return list;
     }
 
-    public static List<String> getNewCentroids(HTableInterface newCentroidTable, int k) throws IOException {
-        List<String> list = null;
+    /**
+     * returns the list of new centroids
+     * @param newCentroidTable HBase table interface
+     * @param k Integer total number of centroids
+     * @return List[String] as new centroids
+     * @throws IOException
+     */
+    public static List<Centroid> getNewCentroids(HTableInterface newCentroidTable, int k) throws IOException {
+        List<Centroid> list = new ArrayList<>();
         for (int i = 0; i < k; i++) {
             Get query = new Get(String.valueOf(i).getBytes());
             query.setMaxVersions(1);
             Result row = newCentroidTable.get(query);
 
-            byte[] cb = row.getValue(Bytes.toBytes(TableConts.TABLE_NEW_CENTROID_FAMAILY),
-                    Bytes.toBytes(TableConts.TABLE_NEW_CENTROID_COLUMN_ID_CENTROID));
+            byte[] cx = row.getValue(Bytes.toBytes(TableConts.FAMILY_NEW_CENTROID),
+                    Bytes.toBytes(TableConts.COL_TBL_NEW_CENTROID_COL_X));
+            byte[] cy = row.getValue(Bytes.toBytes(TableConts.FAMILY_NEW_CENTROID),
+                    Bytes.toBytes(TableConts.COL_TBL_NEW_CENTROID_COL_Y));
 
-            String centroid = Bytes.toString(cb);
-            if (list == null) {
-                list = new ArrayList<>();
+            String x = Bytes.toString(cx);
+            String y = Bytes.toString(cy);
+
+            if(x != null && y != null) {
+                list.add(new Centroid(Integer.parseInt(x), Integer.parseInt(y)));
             }
-            list.add(centroid);
-
-
         }
-
 
         return list;
 
     }
 
-//    public static void main(String[] args) throws IOException {
-//        Configuration conf = new Configuration();
-//        HConnection con = HConnectionManager.createConnection(conf);
-//        HTableInterface table = con.getTable(TableConts.TABLE_NAME_CENTROID.getBytes());
-//
-//        List<String> list = getCentroids(table, KMeansConts.K);
-//
-//        System.out.println(list);
-//    }
 }
