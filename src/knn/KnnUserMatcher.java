@@ -2,15 +2,14 @@ package knn;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.StringTokenizer;
 
+import com.opencsv.CSVParser;
 import conts.*;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Result;
-import org.apache.hadoop.hbase.client.ResultScanner;
-import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.CompareFilter;
 import org.apache.hadoop.hbase.filter.FilterList;
 import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
@@ -31,6 +30,8 @@ import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
+import utils.HbaseUtil;
+import org.jruby.compiler.ir.operands.Hash;
 
 
 /**
@@ -41,26 +42,29 @@ import org.apache.hadoop.util.GenericOptionsParser;
 public class KnnUserMatcher {
 
     public static class KNNMapper extends Mapper<Object, Text, Text, Text> {
+
+        private HConnection mConnection;
+        private HTableInterface mTable;
+        private CSVParser mParser = new CSVParser();
+
+        protected void setup(Context context) throws IOException,
+                InterruptedException {
+            mConnection = HConnectionManager.createConnection(context.getConfiguration());
+            mTable = mConnection.getTable(TableConts.TABLE_NAME.getBytes());
+        }
+
+        @Override
+        protected void cleanup(Context context) throws IOException, InterruptedException {
+            mTable.close();
+            mConnection.close();
+
+        }
+
         public void map(Object key, Text value, Context context) throws IOException {
-            Configuration config = HBaseConfiguration.create();
-            HTable testTable = new HTable(config, TableConts.TABLE_NAME);
+            String movie_list = HbaseUtil.getMoviesList(mTable, value.toString());
 
-                Scan scan = new Scan();
-                scan.addColumn(Bytes.toBytes(TableConts.TABLE_USR_MOV_COL_FAMILY), Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_USR_ID));
-                scan.addColumn(Bytes.toBytes(TableConts.TABLE_USR_MOV_COL_FAMILY), Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_LIST_MOV));
 
-                byte[] family = Bytes.toBytes(TableConts.TABLE_USR_MOV_COL_FAMILY);
-                byte[] qual = Bytes.toBytes("a");
 
-                scan.addColumn(family, qual);
-                ResultScanner rs = testTable.getScanner(scan);
-                for (Result r = rs.next(); r != null; r = rs.next()) {
-                    byte[] valueObj = r.getValue(family, qual);
-                    String value = new String(valueObj);
-                    System.out.println(value);
-                }
-
-            testTable.close();
         }
     }
 
