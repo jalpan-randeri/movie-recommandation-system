@@ -17,16 +17,11 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.io.WritableComparator;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
-import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.Mapper.Context;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
@@ -61,9 +56,23 @@ public class KnnUserMatcher {
         }
 
         public void map(Object key, Text value, Context context) throws IOException {
-            String movie_list = HbaseUtil.getMoviesList(mTable, value.toString());
+            Configuration config = HBaseConfiguration.create();
+            HTable testTable = new HTable(config, TableConts.TABLE_NAME_USR_MOV);
 
+                Scan scan = new Scan();
+                scan.addColumn(Bytes.toBytes(TableConts.FAMILY_USR_MOV), Bytes.toBytes(TableConts.KEY_USR_MOV_USR));
+                scan.addColumn(Bytes.toBytes(TableConts.FAMILY_USR_MOV), Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_LIST_MOV));
 
+                byte[] family = Bytes.toBytes(TableConts.FAMILY_USR_MOV);
+                byte[] qual = Bytes.toBytes("a");
+
+                scan.addColumn(family, qual);
+                ResultScanner rs = testTable.getScanner(scan);
+                for (Result r = rs.next(); r != null; r = rs.next()) {
+                    byte[] valueObj = r.getValue(family, qual);
+                    String val = new String(valueObj);
+                    System.out.println(val);
+                }
 
         }
     }

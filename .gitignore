@@ -100,4 +100,11 @@ com_crashlytics_export_strings.xml
 crashlytics.properties
 crashlytics-build.properties
 
-
+# Project specifics
+data_medium.csv
+data_small.csv
+dataset.csv
+dataset.zip
+movie_titles.txt
+output
+target
