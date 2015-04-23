@@ -15,6 +15,7 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -98,6 +99,27 @@ public class KnnUserMatcher {
                 // 3. emmit the (id, dist), user
                 context.write(emmit_key, new Text(membership));
             }
+        }
+    }
+
+    public class KNNPartitioner extends Partitioner<KeyUserDistance, Text> {
+
+        @Override
+        public int getPartition(KeyUserDistance key, Text value, int numReduceTasks) {
+            return key.user.hashCode() % numReduceTasks;
+        }
+    }
+
+    public static class KNNGroupComparator extends WritableComparator {
+        public KNNGroupComparator() {
+            super(KeyUserDistance.class, true);
+        }
+
+        @Override
+        public int compare(WritableComparable k1, WritableComparable k2) {
+            KeyUserDistance key1 = (KeyUserDistance) k1;
+            KeyUserDistance key2 = (KeyUserDistance) k2;
+            return KeyUserDistance.compare(key1.getUser(), key2.getUser());
         }
     }
 
@@ -227,6 +249,9 @@ public class KnnUserMatcher {
             distance = new DoubleWritable();
         }
 
+        public String getUser() {
+            return user;
+        }
 
         @Override
         public boolean equals(Object o) {
@@ -248,9 +273,17 @@ public class KnnUserMatcher {
             return result;
         }
 
+        public static int compare(String a, String b) {
+            return a.compareTo(b);
+        }
+
         @Override
         public int compareTo(KeyUserDistance o) {
-            return user.compareTo(o.user);
+            int result =  user.compareTo(o.user);
+            if (result == 0) {
+                return  distance.compareTo(o.distance);
+            }
+            return result;
         }
 
         @Override
@@ -284,6 +317,8 @@ public class KnnUserMatcher {
         job.setJarByClass(KnnUserMatcher.class);
         job.setMapperClass(KNNMapper.class);
         job.setReducerClass(KNNReducer.class);
+        job.setPartitionerClass(KNNPartitioner.class);
+        job.setGroupingComparatorClass(KNNGroupComparator.class);
         job.setNumReduceTasks(1);
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(Text.class);
