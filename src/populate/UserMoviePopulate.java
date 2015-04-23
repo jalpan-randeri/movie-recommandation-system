@@ -20,7 +20,7 @@ import java.io.IOException;
  *
  * User Movie Populate will generate the text file
  * this is modification of dataset
- * (Movie_id, user_id, rating, year)  => (user_id, List[movie_id, rating])
+ * (Movie_id, user_id, watch_rating, year)  => (user_id, List[movie_id, watch_rating])
  *
  * Created by jalpanranderi on 4/12/15.
  */

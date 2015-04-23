@@ -4,7 +4,6 @@ import conts.KMeansConts;
 import conts.TableConts;
 import hbase_populate.model.Centroid;
 import kmeans.model.EmitValue;
-import kmeans.model.RatYear;
 import kmeans.utils.CentroidUtils;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.HConnection;
@@ -14,15 +13,10 @@ import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
 import utils.DistanceUtils;
-import utils.HbaseUtil;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -71,7 +65,7 @@ public class KMeansMapper extends TableMapper<IntWritable, EmitValue> {
 
 
         keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_DATASET.getBytes(),
-                TableConts.COL_TBL_DATASET_AVG_YEAR.getBytes());
+                TableConts.COL_TBL_DATASET_AVG_WATCHED_YEAR.getBytes());
         double avg_year = Double.parseDouble(Bytes.toString(keyValue.getValue()));
 
         // 2. get the closest match from the given centroid to the current user
@@ -80,7 +74,7 @@ public class KMeansMapper extends TableMapper<IntWritable, EmitValue> {
         for (int i = 0; i < centroids.size(); i++) {
             Centroid c = centroids.get(i);
 
-            double dist = DistanceUtils.getEucilideanDistance(avg_rating, avg_year,
+            double dist = DistanceUtils.getEuclideanDistance(avg_rating, avg_year,
                     c.rating_x, c.year_y);
             if (dist < closest) {
                 closest = dist;

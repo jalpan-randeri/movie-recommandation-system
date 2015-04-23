@@ -141,7 +141,7 @@ public class Replicated {
         /**
          * generate value will create a string for avg_rating, avg_year, movie_list
          *
-         * @param avg_rating  Long average rating
+         * @param avg_rating  Long average watch_rating
          * @param avg_year    Long average year
          * @param movies_list String
          * @return Text

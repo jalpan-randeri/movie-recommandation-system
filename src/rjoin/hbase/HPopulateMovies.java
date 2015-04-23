@@ -126,13 +126,13 @@ public class HPopulateMovies {
 
             long emit_key = Long.parseLong(tokens[MovieConts.INDEX_CUST_ID]);
 
-//            int movie_year = mCachedYear.get(tokens[MovieConts.INDEX_R_MOVIE_ID]);
+            int release_year = mCachedYear.get(tokens[MovieConts.INDEX_R_MOVIE_ID]);
             int rating_year = getYear(tokens[MovieConts.INDEX_MOVIE_RATING_YEAR]);
-            int year = rating_year;// - movie_year;
+
 
             int rating = Integer.parseInt(tokens[MovieConts.INDEX_RATING]);
             String name = mCachedNames.get(tokens[MovieConts.INDEX_MOVIE_ID]);
-            YearRatingNameValue emmit_value = new YearRatingNameValue(year, rating, name);
+            YearRatingNameValue emmit_value = new YearRatingNameValue(release_year, rating_year, rating, name);
 
             context.write(new LongWritable(emit_key), emmit_value);
         }
@@ -167,14 +167,18 @@ public class HPopulateMovies {
 
         @Override
         protected void reduce(LongWritable key, Iterable<YearRatingNameValue> values, Context context) throws IOException, InterruptedException {
-            double total_year = 0;
-            long count = 0;
+
+            // 1. get the data from the list
+            double total_watch_year = 0;
+            double total_release_year = 0;
             double total_rating = 0;
+            long count = 0;
 
             StringBuilder movies = new StringBuilder();
             for (YearRatingNameValue v : values) {
-                total_year = total_year + v.year;
-                total_rating = total_rating + v.rating;
+                total_watch_year = total_watch_year + v.year;
+                total_rating = total_rating + v.watch_rating;
+                total_release_year = total_release_year + v.release_year;
                 count++;
                 movies.append(v.name);
                 movies.append(DatasetConts.SEPARATOR);
@@ -182,20 +186,28 @@ public class HPopulateMovies {
             movies.deleteCharAt(movies.length() - 1);
 
             double avg_rating = Math.round(total_rating / count);
-            double avg_year = Math.round(total_year / count);
+            double avg_watch_year = Math.round(total_watch_year / count);
+            double avg_release_year = Math.round(total_release_year / count);
 
+
+
+            // 2. add the item into the HBase table
             Put row = new Put(String.valueOf(key.get()).getBytes());
             row.add(TableConts.FAMILY_TBL_DATASET.getBytes(),
                     TableConts.COL_TBL_DATASET_AVG_RATING.getBytes(),
                     String.valueOf(avg_rating).getBytes());
 
             row.add(TableConts.FAMILY_TBL_DATASET.getBytes(),
-                    TableConts.COL_TBL_DATASET_AVG_YEAR.getBytes(),
-                    String.valueOf(avg_year).getBytes());
+                    TableConts.COL_TBL_DATASET_AVG_WATCHED_YEAR.getBytes(),
+                    String.valueOf(avg_watch_year).getBytes());
 
             row.add(TableConts.FAMILY_TBL_DATASET.getBytes(),
                     TableConts.COL_TBL_DATASET_MOVIE_LIST.getBytes(),
                     movies.toString().getBytes());
+
+            row.add(TableConts.FAMILY_TBL_DATASET.getBytes(),
+                    TableConts.COL_TBL_DATASET_AVG_RELEASE_YEAR.getBytes(),
+                    String.valueOf(avg_release_year).getBytes());
 
             mTable.put(row);
         }
@@ -213,19 +225,22 @@ public class HPopulateMovies {
     public static class YearRatingNameValue implements WritableComparable<YearRatingNameValue> {
 
         public int year;
-        public int rating;
+        public int watch_rating;
+        public int release_year;
         public String name;
 
         public YearRatingNameValue() {
             year = 0;
-            rating = 0;
+            watch_rating = 0;
+            release_year = 0;
             name = null;
         }
 
-        public YearRatingNameValue(int mYear, int mRating, String mName) {
+        public YearRatingNameValue(int mYear,  int mReleaseYear, int mRating, String mName) {
             this.year = mYear;
-            this.rating = mRating;
+            this.watch_rating = mRating;
             this.name = mName;
+            this.release_year = mReleaseYear;
         }
 
 
@@ -237,7 +252,7 @@ public class HPopulateMovies {
             YearRatingNameValue ratYKey = (YearRatingNameValue) o;
 
             if (year != ratYKey.year) return false;
-            if (rating != ratYKey.rating) return false;
+            if (watch_rating != ratYKey.watch_rating) return false;
             return !(name != null ? !name.equals(ratYKey.name) : ratYKey.name != null);
 
         }
@@ -245,7 +260,7 @@ public class HPopulateMovies {
         @Override
         public int hashCode() {
             int result = year;
-            result = 31 * result + rating;
+            result = 31 * result + watch_rating;
             result = 31 * result + (name != null ? name.hashCode() : 0);
             return result;
         }
@@ -253,14 +268,16 @@ public class HPopulateMovies {
         @Override
         public void write(DataOutput dataOutput) throws IOException {
             WritableUtils.writeVInt(dataOutput, year);
-            WritableUtils.writeVInt(dataOutput, rating);
+            WritableUtils.writeVInt(dataOutput, watch_rating);
+            WritableUtils.writeVInt(dataOutput, release_year);
             WritableUtils.writeString(dataOutput, name);
         }
 
         @Override
         public void readFields(DataInput dataInput) throws IOException {
             year = WritableUtils.readVInt(dataInput);
-            rating = WritableUtils.readVInt(dataInput);
+            watch_rating = WritableUtils.readVInt(dataInput);
+            release_year = WritableUtils.readVInt(dataInput);
             name = WritableUtils.readString(dataInput);
         }
 
@@ -270,7 +287,7 @@ public class HPopulateMovies {
                 return name.compareTo(o.name);
             } else {
                 return Integer.compare(year, o.year) == 0 ?
-                        Integer.compare(rating, o.rating) : 0;
+                        Integer.compare(watch_rating, o.watch_rating) : 0;
             }
         }
     }

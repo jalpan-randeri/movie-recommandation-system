@@ -43,9 +43,9 @@ public class DistanceUtils {
 
 
     /**
-     * getRating extract the rating from the given value tokens.
+     * getRating extract the watch_rating from the given value tokens.
      * @param token String representing (Movie_id,Rating$)
-     * @return int rating square;
+     * @return int watch_rating square;
      */
     private static double getRating(String token) {
         return Double.parseDouble(token.split(DatasetConts.SEPARATOR)[1]
@@ -65,9 +65,9 @@ public class DistanceUtils {
     /**
      * get multiplication of common movies in two lists
      *
-     * @param sorted_list1 sorted List[String] representing movie,rating
-     * @param sorted_list2 sorted List[String] representing movie,rating
-     * @return Double the common movie rating multiplication.
+     * @param sorted_list1 sorted List[String] representing movie,watch_rating
+     * @param sorted_list2 sorted List[String] representing movie,watch_rating
+     * @return Double the common movie watch_rating multiplication.
      */
     private static double getCommons(String[] sorted_list1, String[] sorted_list2) {
         double common = 0;
@@ -129,14 +129,14 @@ public class DistanceUtils {
 
 
     /**
-     * returns eculidean distance of two vectors
+     * returns euclidean distance of two vectors
      * @param x1 double as Average1
      * @param y1 double as Rating1
      * @param x2 double as Average2
      * @param y2 double as Rating2
      * @return Integer manhattan distance of the two vectors
      */
-    public static double getEucilideanDistance(double x1, double y1, double x2, double y2){
+    public static double getEuclideanDistance(double x1, double y1, double x2, double y2){
         return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
     }
 
