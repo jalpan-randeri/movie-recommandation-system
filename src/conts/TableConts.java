@@ -10,7 +10,7 @@ public class TableConts {
     public static final String KEY_USR_RATING = "USR_ID";
     public static final String TABLE_COL_RATING ="RATING";
 
-    // User Movie rating table
+    // User Movie watch_rating table
     public static final String TABLE_NAME_USR_MOV = "TABLE_USR_MOV_MAPPING";
     public static final String FAMILY_USR_MOV = "movies";
     public static final String KEY_USR_MOV_USR = "USR_ID";
@@ -41,7 +41,8 @@ public class TableConts {
     public static final String FAMILY_TBL_DATASET = "netflix_dataset";
     public static final String KEY_TBL_DATASET = "KEY_USR_ID";
     public static final String COL_TBL_DATASET_AVG_RATING = "AVG_RATING";
-    public static final String COL_TBL_DATASET_AVG_YEAR = "AVG_YEAR";
+    public static final String COL_TBL_DATASET_AVG_WATCHED_YEAR = "AVG WATCH YEAR";
+    public static final String COL_TBL_DATASET_AVG_RELEASE_YEAR = "AVG RELEASE YEAR";
     public static final String COL_TBL_DATASET_MOVIE_LIST = "MOVIES";
 
 
