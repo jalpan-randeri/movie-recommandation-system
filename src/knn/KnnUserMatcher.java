@@ -1,14 +1,12 @@
 package knn;
 
 import java.io.*;
-import java.security.Key;
+
 import java.util.*;
 
 import com.opencsv.CSVParser;
 import conts.*;
-import kmeans.mappers.KMeansMapper;
-import kmeans.model.EmitValue;
-import kmeans.reducers.KMeansReducer;
+import javafx.scene.control.Tab;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
@@ -17,12 +15,11 @@ import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
-import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 import utils.DistanceUtils;
@@ -107,6 +104,27 @@ public class KnnUserMatcher {
         }
     }
 
+    public static class KnnPartitioner extends Partitioner<KeyUserDistance, Text> {
+
+        @Override
+        public int getPartition(KeyUserDistance key, Text value, int numReduceTasks) {
+            return (key.user.hashCode() * 127) % numReduceTasks;
+        }
+    }
+
+//    public static class KNNGroupComparator extends WritableComparator {
+//        public KNNGroupComparator() {
+//            super(KeyUserDistance.class, true);
+//        }
+//
+//        @Override
+//        public int compare(WritableComparable k1, WritableComparable k2) {
+//            KeyUserDistance key1 = (KeyUserDistance) k1;
+//            KeyUserDistance key2 = (KeyUserDistance) k2;
+//            return KeyUserDistance.compare(key1.getUser(), key2.getUser());
+//        }
+//    }
+
     public static class KNNReducer extends Reducer<KeyUserDistance, Text, Text, Text> {
 
         @Override
@@ -117,7 +135,7 @@ public class KnnUserMatcher {
             List<String> neighbours = new ArrayList<>();
 
             while(iterator.hasNext() && i < K){
-                neighbours.add(values.toString());
+                neighbours.add(iterator.next().toString());
                 i++;
             }
 
@@ -233,6 +251,9 @@ public class KnnUserMatcher {
             distance = new DoubleWritable();
         }
 
+        public String getUser() {
+            return user;
+        }
 
         @Override
         public boolean equals(Object o) {
@@ -254,9 +275,14 @@ public class KnnUserMatcher {
             return result;
         }
 
+
         @Override
         public int compareTo(KeyUserDistance o) {
-            return user.compareTo(o.user);
+            int result =  user.compareTo(o.user);
+            if (result == 0) {
+                return  distance.compareTo(o.distance);
+            }
+            return result;
         }
 
         @Override
@@ -292,7 +318,7 @@ public class KnnUserMatcher {
             }
         }
     }
-
+//
     public static class KeyGrouppingComparator extends WritableComparator{
 
         protected KeyGrouppingComparator() {
@@ -331,6 +357,10 @@ public class KnnUserMatcher {
 
         job.setGroupingComparatorClass(KeyGrouppingComparator.class);
         job.setSortComparatorClass(KeySortingComparator.class);
+        job.setPartitionerClass(KnnPartitioner.class);
+//        job.setGroupingComparatorClass(KNNGroupComparator.class);
+        job.setNumReduceTasks(K);
+
 
         job.setOutputKeyClass(KeyUserDistance.class);
         job.setOutputValueClass(Text.class);
@@ -339,6 +369,9 @@ public class KnnUserMatcher {
 
         Scan scan = new Scan();
         scan.addFamily(TableConts.FAMILY_TBL_DATASET.getBytes());
+        scan.addColumn(TableConts.FAMILY_TBL_DATASET.getBytes(), TableConts.COL_TBL_DATASET_AVG_RELEASE_YEAR.getBytes());
+        scan.addColumn(TableConts.FAMILY_TBL_DATASET.getBytes(), TableConts.COL_TBL_DATASET_AVG_WATCHED_YEAR.getBytes());
+        scan.addColumn(TableConts.FAMILY_TBL_DATASET.getBytes(), TableConts.COL_TBL_DATASET_MEMBERSHIP.getBytes());
         scan.setCaching(500);
         scan.setCacheBlocks(false);
         TableMapReduceUtil.initTableMapperJob(TableConts.TABLE_NAME_DATASET,
