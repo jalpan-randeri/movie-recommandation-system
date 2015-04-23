@@ -7,14 +7,14 @@ import org.apache.hadoop.hbase.client.HConnection;
 import org.apache.hadoop.hbase.client.HConnectionManager;
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
-import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -47,14 +47,16 @@ public class KMeansReducer extends
     public void reduce(IntWritable key, Iterable<EmitValue> values,
                        Context context) throws IOException, InterruptedException {
         // 1 retrieve the cluster index
-        int id = key.get();
+        int cluster_id = key.get();
 
         // 2. get all the members
-        ArrayList<EmitValue> list = new ArrayList<>();
+        // TODO: something is not working here
+        HashMap<String,EmitValue> list = new HashMap<>();
         double total_year = 0;
         double total_rating = 0;
         for(EmitValue t : values){
-            list.add(t);
+            System.out.println(t.user_id);
+            list.put(t.user_id, t);
             total_year = total_year + t.year.get();
             total_rating = total_rating + t.rating.get();
         }
@@ -65,10 +67,11 @@ public class KMeansReducer extends
 
 
         // 4. save centroid
-        saveCentroid(String.valueOf(id), new_rating, new_year);
+        saveCentroid(String.valueOf(cluster_id), new_rating, new_year);
 
         // 5. save members
-        addToCluster(mClusters, list, String.valueOf(id));
+        // TODO: move this into cleanup phase
+        addToCluster(mClusters, list, String.valueOf(cluster_id));
     }
 
     /**
@@ -92,17 +95,17 @@ public class KMeansReducer extends
      * @param id String cluster id
      * @throws IOException
      */
-    private void addToCluster(HTableInterface table, List<EmitValue> list, String id) throws IOException {
+    private void addToCluster(HTableInterface table, HashMap<String, EmitValue> list, String id) throws IOException {
 
         StringBuilder builder = new StringBuilder();
-        for(EmitValue e : list){
-            builder.append(e.user_id);
+        for(String e : list.keySet()){
+            builder.append(e);
             builder.append(DatasetConts.SEPARATOR);
         }
 
         Put row = new Put(id.getBytes());
         row.add(TableConts.FAMILY_CLUSTERS.getBytes(),
-                TableConts.TABLE_CLUSTERS_COLUMN_MEMBERS.getBytes(),
+                TableConts.COL_TBL_CLUSTERS_MEMBERS.getBytes(),
                 builder.toString().getBytes());
         table.put(row);
     }

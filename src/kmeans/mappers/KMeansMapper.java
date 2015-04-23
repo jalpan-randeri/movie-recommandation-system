@@ -25,7 +25,6 @@ import java.util.List;
 public class KMeansMapper extends TableMapper<IntWritable, EmitValue> {
 
     private HConnection mConnection;
-    private HTableInterface mTable;
     private HTableInterface mCentroidsTable;
     private List<Centroid> centroids;
 
@@ -34,7 +33,6 @@ public class KMeansMapper extends TableMapper<IntWritable, EmitValue> {
             InterruptedException {
         // 1. setup connection with HBase, initial centroid table
         mConnection = HConnectionManager.createConnection(context.getConfiguration());
-        mTable = mConnection.getTable(TableConts.TABLE_NAME_DATASET.getBytes());
         mCentroidsTable = mConnection.getTable(TableConts.TABLE_NAME_CENTROID.getBytes());
 
         // 2. save the centroid movies into HashMap for fast retrieval
@@ -46,7 +44,6 @@ public class KMeansMapper extends TableMapper<IntWritable, EmitValue> {
     @Override
     protected void cleanup(Context context) throws IOException, InterruptedException {
         // 1. close connection
-        mTable.close();
         mCentroidsTable.close();
         mConnection.close();
 
@@ -55,8 +52,8 @@ public class KMeansMapper extends TableMapper<IntWritable, EmitValue> {
     @Override
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
 
-        String sid = Bytes.toString(key.get());
-        long id = Long.parseLong(sid);
+        String user_id = Bytes.toString(key.get());
+
 
         // 1. read the current row
         KeyValue keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_DATASET.getBytes(),
@@ -83,9 +80,9 @@ public class KMeansMapper extends TableMapper<IntWritable, EmitValue> {
         }
 //        System.out.println("Closest "+centroid_id);
 
-        EmitValue e_value = new EmitValue(id, avg_rating, avg_year);
+        EmitValue e_value = new EmitValue(user_id, avg_rating, avg_year);
 
-        // 3. emmit the match with corresponding id
+        // 3. emmit the match with corresponding cluster id as key and value as user info
         context.write(new IntWritable(centroid_id), e_value);
 
     }

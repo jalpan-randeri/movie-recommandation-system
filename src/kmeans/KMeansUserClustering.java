@@ -79,6 +79,7 @@ public class KMeansUserClustering {
 
 
             Scan scan = new Scan();
+            scan.addFamily(TableConts.FAMILY_TBL_DATASET.getBytes());
             scan.setCaching(500);
             scan.setCacheBlocks(false);
             TableMapReduceUtil.initTableMapperJob(TableConts.TABLE_NAME_DATASET,

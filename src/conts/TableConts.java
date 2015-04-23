@@ -33,8 +33,8 @@ public class TableConts {
     // KMeans user cluster membership table
     public static final String TABLE_NAME_CLUSTERS = "TABLE_USR_CLUSTER";
     public static final String FAMILY_CLUSTERS = "clusters";
-    public static final String TABLE_CLUSTERS_COL_CLUSTER_ID = "CLUSTER_ID";
-    public static final String TABLE_CLUSTERS_COLUMN_MEMBERS = "CLUSTER_MEMBERS";
+    public static final String COL_TBL_CLUSTERS__CLUSTER_ID = "CLUSTER_ID";
+    public static final String COL_TBL_CLUSTERS_MEMBERS = "CLUSTER_MEMBERS";
 
 
     public static final String TABLE_NAME_DATASET = "TABLE_NETFLIX_DATASET";
