@@ -1,17 +1,23 @@
 package knn;
 
 import java.io.*;
+import java.security.Key;
 import java.util.*;
 
 import com.opencsv.CSVParser;
 import conts.*;
+import kmeans.mappers.KMeansMapper;
+import kmeans.model.EmitValue;
+import kmeans.reducers.KMeansReducer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
@@ -140,6 +146,7 @@ public class KnnUserMatcher {
                     maxK.put(k, 1);
                 }
             }
+
             String max = "NULL";
             int maxKCount = 0;
             for (String key : maxK.keySet()) {
@@ -211,7 +218,6 @@ public class KnnUserMatcher {
         }
     }
 
-
     public static class KeyUserDistance implements WritableComparable<KeyUserDistance>{
 
         public String user;
@@ -266,29 +272,81 @@ public class KnnUserMatcher {
         }
     }
 
+
+
+    public static class KeySortingComparator extends WritableComparator{
+
+        protected KeySortingComparator() {
+            super(KeyUserDistance.class, true);
+        }
+
+        @Override
+        public int compare(WritableComparable a, WritableComparable b) {
+            KeyUserDistance k1 = (KeyUserDistance) a;
+            KeyUserDistance k2 = (KeyUserDistance) b;
+
+            if(k1.user.equals(k2.user)){
+                return k1.distance.compareTo(k2.distance);
+            }else{
+                return k1.user.compareTo(k2.user);
+            }
+        }
+    }
+
+    public static class KeyGrouppingComparator extends WritableComparator{
+
+        protected KeyGrouppingComparator() {
+            super(KeyUserDistance.class, true);
+        }
+
+        @Override
+        public int compare(WritableComparable a, WritableComparable b) {
+            KeyUserDistance k1 = (KeyUserDistance) a;
+            KeyUserDistance k2 = (KeyUserDistance) b;
+
+            return k1.user.compareTo(k2.user);
+        }
+    }
+
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
 
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(conf, args)
                 .getRemainingArgs();
         if (otherArgs.length != 2) {
-            System.err.println("Usage: KNN <in> <out>");
+            System.err.println("Usage: KNN <distrubuted> <output>");
             System.exit(2);
         }
 
-        Scan scan = new Scan();
-        scan.setCaching(1000);
-        scan.setCacheBlocks(false);
 
-        Job job = new Job(conf, "KNN");
+        // - 0 Distributed Cache file
+        // - 1 Output directory
+        DistributedCache.addCacheFile(new Path(otherArgs[0]).toUri(), conf);
+
+        Job job = new Job(conf, "Knn");
         job.setJarByClass(KnnUserMatcher.class);
+
         job.setMapperClass(KNNMapper.class);
         job.setReducerClass(KNNReducer.class);
-        job.setNumReduceTasks(1);
-        job.setOutputKeyClass(NullWritable.class);
+
+        job.setGroupingComparatorClass(KeyGrouppingComparator.class);
+        job.setSortComparatorClass(KeySortingComparator.class);
+
+        job.setOutputKeyClass(KeyUserDistance.class);
         job.setOutputValueClass(Text.class);
-        FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
+
         FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
+
+        Scan scan = new Scan();
+        scan.addFamily(TableConts.FAMILY_TBL_DATASET.getBytes());
+        scan.setCaching(500);
+        scan.setCacheBlocks(false);
+        TableMapReduceUtil.initTableMapperJob(TableConts.TABLE_NAME_DATASET,
+                scan,
+                KNNMapper.class,
+                KeyUserDistance.class,
+                Text.class,
+                job);
         job.waitForCompletion(true);
 
 

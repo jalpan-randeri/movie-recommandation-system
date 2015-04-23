@@ -20,7 +20,7 @@ public class MovieConts {
 
     // Movie Knn Test set
     public static final int INDEX_T_USR_ID = 0;
-    public static final int INDEX_T_WATCH_YEAR = 1;
-    public static final int INDEX_T_RELEASE_YEAR = 2;
+    public static final int INDEX_T_WATCH_YEAR = 3;
+    public static final int INDEX_T_RELEASE_YEAR = 4;
 
 }

@@ -108,7 +108,6 @@ public class MembershipAssigner {
         @Override
         protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
             String sid = Bytes.toString(key.get());
-            System.out.println(sid);
 
             Put row = new Put(sid.getBytes());
             row.add(TableConts.FAMILY_TBL_DATASET.getBytes(),
