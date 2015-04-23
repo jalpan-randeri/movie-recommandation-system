@@ -44,7 +44,7 @@ public class TableConts {
     public static final String COL_TBL_DATASET_AVG_WATCHED_YEAR = "AVG WATCH YEAR";
     public static final String COL_TBL_DATASET_AVG_RELEASE_YEAR = "AVG RELEASE YEAR";
     public static final String COL_TBL_DATASET_MOVIE_LIST = "MOVIES";
-
+    public static final String COL_TBL_DATASET_MEMBERSHIP = "MEMBERSHIP";
 
     public static final int MB_100 = 102400;
 }

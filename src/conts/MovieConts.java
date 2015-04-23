@@ -15,4 +15,12 @@ public class MovieConts {
     public static final int INDEX_R_MOVIE_ID = 0;
     public static final int INDEX_R_MOVIE_YEAR = 1;
     public static final int INDEX_R_MOVIE_NAME = 2;
+
+
+
+    // Movie Knn Test set
+    public static final int INDEX_T_USR_ID = 0;
+    public static final int INDEX_T_WATCH_YEAR = 1;
+    public static final int INDEX_T_RELEASE_YEAR = 2;
+
 }

@@ -46,7 +46,6 @@ public class HPopulateMovies {
 
         //  0 - Distributed Cache
         //  1 - Input file
-        //  2 - Output directory
         DistributedCache.addCacheFile(new Path(otherArgs[0]).toUri(), conf);
 
         generateTable(conf);
@@ -132,7 +131,7 @@ public class HPopulateMovies {
 
             int rating = Integer.parseInt(tokens[MovieConts.INDEX_RATING]);
             String name = mCachedNames.get(tokens[MovieConts.INDEX_MOVIE_ID]);
-            YearRatingNameValue emmit_value = new YearRatingNameValue(release_year, rating_year, rating, name);
+            YearRatingNameValue emmit_value = new YearRatingNameValue(rating_year,release_year , rating, name);
 
             context.write(new LongWritable(emit_key), emmit_value);
         }

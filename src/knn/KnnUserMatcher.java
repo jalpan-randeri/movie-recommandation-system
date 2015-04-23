@@ -1,32 +1,25 @@
 package knn;
 
-import java.io.IOException;
-import java.util.Objects;
-import java.util.StringTokenizer;
+import java.io.*;
+import java.util.*;
 
 import com.opencsv.CSVParser;
 import conts.*;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.KeyValue;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.filter.CompareFilter;
-import org.apache.hadoop.hbase.filter.FilterList;
-import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
-import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.io.NullWritable;
-import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
-import utils.HbaseUtil;
-import org.jruby.compiler.ir.operands.Hash;
+import utils.DistanceUtils;
 
 
 /**
@@ -36,51 +29,241 @@ import org.jruby.compiler.ir.operands.Hash;
  */
 public class KnnUserMatcher {
 
-    public static class KNNMapper extends Mapper<Object, Text, Text, Text> {
+    public static final int K = 11;
 
-        private HConnection mConnection;
-        private HTableInterface mTable;
+
+    public static class KNNMapper extends TableMapper<KeyUserDistance, Text> {
+
+        private HashMap<String, AvgReleaseWatch> mCached;
         private CSVParser mParser = new CSVParser();
 
         protected void setup(Context context) throws IOException,
                 InterruptedException {
-            mConnection = HConnectionManager.createConnection(context.getConfiguration());
-            mTable = mConnection.getTable(TableConts.TABLE_NAME.getBytes());
+            mCached = new HashMap<>();
+            Path[] cacheFile = DistributedCache.getLocalCacheFiles(context.getConfiguration());
+            if (cacheFile != null && cacheFile.length > 0) {
+                readFile(cacheFile[0].toString());
+            }
+
+        }
+
+
+        /**
+         * read file reads the file which is distributed and added into the HashMap
+         *
+         * @param path input file path
+         */
+        private void readFile(String path) throws IOException {
+            BufferedReader reader = new BufferedReader(new FileReader(path));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] tokens = mParser.parseLine(line);
+                double avg_watch_year = Double.parseDouble(tokens[MovieConts.INDEX_T_WATCH_YEAR]);
+                double avg_release_year = Double.parseDouble(tokens[MovieConts.INDEX_T_RELEASE_YEAR]);
+
+                mCached.put(tokens[MovieConts.INDEX_T_USR_ID], new AvgReleaseWatch(avg_release_year, avg_watch_year));
+
+            }
+            reader.close();
+
         }
 
         @Override
-        protected void cleanup(Context context) throws IOException, InterruptedException {
-            mTable.close();
-            mConnection.close();
+        protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
+            String sid = Bytes.toString(key.get());
+            long id = Long.parseLong(sid);
 
+            // 1. read the current row
+            KeyValue keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_DATASET.getBytes(),
+                    TableConts.COL_TBL_DATASET_AVG_RELEASE_YEAR.getBytes());
+            double avg_release_year = Double.parseDouble(Bytes.toString(keyValue.getValue()));
+
+
+            keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_DATASET.getBytes(),
+                    TableConts.COL_TBL_DATASET_AVG_WATCHED_YEAR.getBytes());
+            double avg_watched_year = Double.parseDouble(Bytes.toString(keyValue.getValue()));
+
+
+            keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_DATASET.getBytes(),
+                    TableConts.COL_TBL_DATASET_MEMBERSHIP.getBytes());
+            String membership = Bytes.toString(keyValue.getValue());
+
+            // 2. calculate the distance form the all test users
+
+            for (String user : mCached.keySet()) {
+                AvgReleaseWatch data = mCached.get(user);
+                double dist = DistanceUtils.getEuclideanDistance(avg_release_year, avg_watched_year,
+                        data.release_year.get(), data.watch_year.get());
+
+                KeyUserDistance emmit_key = new KeyUserDistance(user, dist);
+
+                // 3. emmit the (id, dist), user
+                context.write(emmit_key, new Text(membership));
+            }
+        }
+    }
+
+    public static class KNNReducer extends Reducer<KeyUserDistance, Text, Text, Text> {
+
+
+        @Override
+        protected void reduce(KeyUserDistance key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
+            // 1. get the top k
+            Iterator<Text> iterator = values.iterator();
+            int i = 0;
+            List<String> neighbours = new ArrayList<>();
+
+            while(iterator.hasNext() && i < K){
+                neighbours.add(values.toString());
+                i++;
+            }
+
+            // 2. find the best match
+            String tag = getMostOccuring(neighbours);
+
+            // 3. emmit the result
+            context.write(new Text(key.user), new Text(tag));
         }
 
-        public void map(Object key, Text value, Context context) throws IOException {
-            Configuration config = HBaseConfiguration.create();
-            HTable testTable = new HTable(config, TableConts.TABLE_NAME_USR_MOV);
 
-                Scan scan = new Scan();
-                scan.addColumn(Bytes.toBytes(TableConts.FAMILY_USR_MOV), Bytes.toBytes(TableConts.KEY_USR_MOV_USR));
-                scan.addColumn(Bytes.toBytes(TableConts.FAMILY_USR_MOV), Bytes.toBytes(TableConts.TABLE_USR_MOV_COLUMN_LIST_MOV));
-
-                byte[] family = Bytes.toBytes(TableConts.FAMILY_USR_MOV);
-                byte[] qual = Bytes.toBytes("a");
-
-                scan.addColumn(family, qual);
-                ResultScanner rs = testTable.getScanner(scan);
-                for (Result r = rs.next(); r != null; r = rs.next()) {
-                    byte[] valueObj = r.getValue(family, qual);
-                    String val = new String(valueObj);
-                    System.out.println(val);
+        /**
+         * get the most occurring flag form the neighbour to find the
+         * best matching neighbour
+         * @param neighbours List[Flags]
+         * @return String Flag as the member of cluster
+         */
+        private String getMostOccuring(List<String> neighbours) {
+            TreeMap<String, Integer> map = new TreeMap<>();
+            for(String s :  neighbours){
+                if(map.containsKey(s)){
+                    map.put(s, map.get(s) + 1);
+                }else{
+                    map.put(s, 1);
                 }
+            }
 
+            return map.lastKey();
+        }
+
+
+    }
+
+
+
+
+
+    public static class AvgReleaseWatch implements WritableComparable<AvgReleaseWatch>{
+
+        public DoubleWritable release_year;
+        public DoubleWritable watch_year;
+
+
+        public AvgReleaseWatch() {
+            release_year = new DoubleWritable();
+            watch_year = new DoubleWritable();
+        }
+
+        public AvgReleaseWatch(double realse_year, double watch_year) {
+            this.release_year = new DoubleWritable(realse_year);
+            this.watch_year = new DoubleWritable(watch_year);
+        }
+
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            AvgReleaseWatch that = (AvgReleaseWatch) o;
+
+            if (release_year != null ? !release_year.equals(that.release_year) : that.release_year != null) return false;
+            if (watch_year != null ? !watch_year.equals(that.watch_year) : that.watch_year != null) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = release_year != null ? release_year.hashCode() : 0;
+            result = 31 * result + (watch_year != null ? watch_year.hashCode() : 0);
+            return result;
+        }
+
+        @Override
+        public int compareTo(AvgReleaseWatch o) {
+            return release_year.compareTo(o.release_year) == 0 ?
+                    watch_year.compareTo(o.watch_year) :
+                    release_year.compareTo(o.release_year);
+
+        }
+
+        @Override
+        public void write(DataOutput dataOutput) throws IOException {
+            release_year.write(dataOutput);
+            watch_year.write(dataOutput);
+        }
+
+        @Override
+        public void readFields(DataInput dataInput) throws IOException {
+            release_year.readFields(dataInput);
+            watch_year.readFields(dataInput);
         }
     }
 
-    public static class KNNReducer extends Reducer<Text, Text, NullWritable, Text> {
 
+    public static class KeyUserDistance implements WritableComparable<KeyUserDistance>{
+
+        public String user;
+        public DoubleWritable distance;
+
+        public KeyUserDistance(String user, double distance) {
+            this.user = user;
+            this.distance = new DoubleWritable(distance);
+        }
+
+        public KeyUserDistance() {
+            user = new String();
+            distance = new DoubleWritable();
+        }
+
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            KeyUserDistance that = (KeyUserDistance) o;
+
+            if (!distance.equals(that.distance)) return false;
+            if (!user.equals(that.user)) return false;
+
+            return true;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = user.hashCode();
+            result = 31 * result + distance.hashCode();
+            return result;
+        }
+
+        @Override
+        public int compareTo(KeyUserDistance o) {
+            return user.compareTo(o.user);
+        }
+
+        @Override
+        public void write(DataOutput dataOutput) throws IOException {
+            WritableUtils.writeString(dataOutput, user);
+            distance.write(dataOutput);
+        }
+
+        @Override
+        public void readFields(DataInput dataInput) throws IOException {
+            user = WritableUtils.readString(dataInput);
+            distance.readFields(dataInput);
+        }
     }
-
 
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
 
@@ -95,6 +278,7 @@ public class KnnUserMatcher {
         Scan scan = new Scan();
         scan.setCaching(1000);
         scan.setCacheBlocks(false);
+
         Job job = new Job(conf, "KNN");
         job.setJarByClass(KnnUserMatcher.class);
         job.setMapperClass(KNNMapper.class);
@@ -105,6 +289,7 @@ public class KnnUserMatcher {
         FileInputFormat.addInputPath(job, new Path(otherArgs[0]));
         FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
         job.waitForCompletion(true);
+
 
     }
 }
