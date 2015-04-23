@@ -44,7 +44,6 @@ public class KnnUserMatcher {
             if (cacheFile != null && cacheFile.length > 0) {
                 readFile(cacheFile[0].toString());
             }
-
         }
 
 
@@ -65,7 +64,6 @@ public class KnnUserMatcher {
 
             }
             reader.close();
-
         }
 
         @Override
@@ -105,7 +103,6 @@ public class KnnUserMatcher {
 
     public static class KNNReducer extends Reducer<KeyUserDistance, Text, Text, Text> {
 
-
         @Override
         protected void reduce(KeyUserDistance key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
             // 1. get the top k
@@ -133,24 +130,28 @@ public class KnnUserMatcher {
          * @return String Flag as the member of cluster
          */
         private String getMostOccuring(List<String> neighbours) {
-            TreeMap<String, Integer> map = new TreeMap<>();
-            for(String s :  neighbours){
-                if(map.containsKey(s)){
-                    map.put(s, map.get(s) + 1);
-                }else{
-                    map.put(s, 1);
+            HashMap<String, Integer> maxK = new HashMap<>();
+            for (String k : neighbours) {
+                if (maxK.containsKey(k)) {
+                    int countK = maxK.get(k);
+                    countK++;
+                    maxK.put(k, countK);
+                } else {
+                    maxK.put(k, 1);
                 }
             }
-
-            return map.lastKey();
+            String max = "NULL";
+            int maxKCount = 0;
+            for (String key : maxK.keySet()) {
+                int currentCount = maxK.get(key);
+                if (maxKCount < currentCount) {
+                    maxKCount = currentCount;
+                    max = key;
+                }
+            }
+            return max;
         }
-
-
     }
-
-
-
-
 
     public static class AvgReleaseWatch implements WritableComparable<AvgReleaseWatch>{
 

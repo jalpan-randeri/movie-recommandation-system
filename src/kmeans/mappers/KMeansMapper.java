@@ -81,7 +81,7 @@ public class KMeansMapper extends TableMapper<IntWritable, EmitValue> {
                 centroid_id = i;
             }
         }
-        System.out.println("Closest "+centroid_id);
+//        System.out.println("Closest "+centroid_id);
 
         EmitValue e_value = new EmitValue(id, avg_rating, avg_year);
 
