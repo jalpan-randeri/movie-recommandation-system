@@ -1,7 +1,7 @@
 package kmeans.utils;
 
 import conts.TableConts;
-import hbase_populate.model.Centroid;
+import kmeans.model.Centroid;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.HTableInterface;
 import org.apache.hadoop.hbase.client.Result;

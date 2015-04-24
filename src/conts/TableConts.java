@@ -55,5 +55,14 @@ public class TableConts {
     public static final String COL_TBL_KNN_MEMBERSHIP = "MEMBERSHIP";
 
 
+
+    public static final String TABLE_NAME_TRAIN = "TABLE_NAME_TRAIN";
+    public static final String FAMILY_TBL_TRAIN = "training";
+    public static final String KEY_TBL_TRAIN = "KEY_USR";
+    public static final String COL_TBL_TRAIN_MOVIE_ID = "MOVIE ID";
+    public static final String COL_TBL_TRAIN_WATCH_DATE = "WATCH DATE";
+    public static final String COL_TBL_TRAIN_RATING = "RATING";
+
+
     public static final int MB_100 = 102400;
 }

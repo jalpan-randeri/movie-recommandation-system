@@ -1,4 +1,4 @@
-package hbase_populate.model;
+package kmeans.model;
 
 /**
  * Created by jalpanranderi on 4/20/15.

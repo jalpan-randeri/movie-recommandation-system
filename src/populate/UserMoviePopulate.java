@@ -3,8 +3,11 @@ package populate;
 import com.opencsv.CSVParser;
 import conts.DatasetConts;
 import conts.MovieConts;
+import conts.TableConts;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.*;
+import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
@@ -37,8 +40,6 @@ public class UserMoviePopulate {
         }
 
 
-
-
         Job job = new Job(conf, "Populate Data into HDFS");
         job.setJarByClass(UserMoviePopulate.class);
 
@@ -56,6 +57,8 @@ public class UserMoviePopulate {
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
+
+
 
 
     public static class DatasetMapper extends Mapper<LongWritable, Text, Text, Text>{

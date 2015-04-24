@@ -2,7 +2,7 @@ package kmeans.mappers;
 
 import conts.KMeansConts;
 import conts.TableConts;
-import hbase_populate.model.Centroid;
+import kmeans.model.Centroid;
 import kmeans.model.EmitValue;
 import kmeans.utils.CentroidUtils;
 import org.apache.hadoop.hbase.KeyValue;
