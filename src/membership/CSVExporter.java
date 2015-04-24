@@ -73,7 +73,7 @@ public class CSVExporter {
             String[] movies = Bytes.toString(c_movies).split(DatasetConts.SEPARATOR);
 
             StringBuilder builder = new StringBuilder();
-            for(int i = 0; i < 5 && i < movies.length; i++){
+            for(int i = 0; i < 4 && i < movies.length; i++){
                 builder.append(movies[i]);
                 builder.append(DatasetConts.SEPARATOR);
             }
@@ -81,7 +81,7 @@ public class CSVExporter {
 
             String s = String.format("%s,%s,%s,%s,%s,\"%s\"\n", user_id, flag, avg_rating, avg_watch, avg_relasae_year, builder.toString());
             writer.write(s);
-            if(count == 1000)
+            if(count == 500)
                 break;
         }
         //closing the scanner

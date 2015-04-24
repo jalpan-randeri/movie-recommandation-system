@@ -33,7 +33,7 @@ import utils.DistanceUtils;
  */
 public class KnnUserMatcher {
 
-    public static final int K = 11;
+    public static final int K = 13;
 
     public static class UserData{
         public PriorityQueue<UserInfo> queue = new PriorityQueue<>(K, Collections.reverseOrder());
@@ -98,11 +98,12 @@ public class KnnUserMatcher {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] tokens = mParser.parseLineMulti(line);
-                double avg_watch_year = Double.parseDouble(tokens[MovieConts.INDEX_T_WATCH_YEAR]);
-                double avg_release_year = Double.parseDouble(tokens[MovieConts.INDEX_T_RELEASE_YEAR]);
-                String movies = tokens[MovieConts.INDEX_T_MOVIES];
-
-                mCached.put(tokens[MovieConts.INDEX_T_USR_ID], new AvgReleaseWatch(avg_release_year, avg_watch_year, movies));
+                if(tokens.length == 6) {
+                    double avg_watch_year = Double.parseDouble(tokens[MovieConts.INDEX_T_WATCH_YEAR]);
+                    double avg_release_year = Double.parseDouble(tokens[MovieConts.INDEX_T_RELEASE_YEAR]);
+                    String movies = tokens[MovieConts.INDEX_T_MOVIES];
+                    mCached.put(tokens[MovieConts.INDEX_T_USR_ID], new AvgReleaseWatch(avg_release_year, avg_watch_year, movies));
+                }
 
             }
             reader.close();
