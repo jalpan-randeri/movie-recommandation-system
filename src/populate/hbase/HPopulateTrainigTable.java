@@ -16,9 +16,13 @@ import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
+
+
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 
 import java.io.IOException;
@@ -41,8 +45,8 @@ public class HPopulateTrainigTable {
         String[] otherArgs = new GenericOptionsParser(args).getRemainingArgs();
 
 
-        if(otherArgs.length != 1){
-            System.out.println("Usage : HPopulateTrainigTable : <input/ dataset.csv>");
+        if(otherArgs.length != 2){
+            System.out.println("Usage : HPopulateTrainigTable : <input/ dataset.csv> <output>");
             System.exit(1);
         }
 
@@ -50,14 +54,16 @@ public class HPopulateTrainigTable {
 
         Job job = new Job(conf, "Hpopulate movies table");
         job.setJarByClass(HPopulateTrainigTable.class);
+        job.setNumReduceTasks(0);
         job.setMapperClass(HTraingMapper.class);
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(NullWritable.class);
 
-        job.setOutputFormatClass(TableOutputFormat.class);
+        job.setOutputFormatClass(NullOutputFormat.class);
 
         FileInputFormat.setInputPaths(job, new Path(otherArgs[0]));
-        job.getConfiguration().set(TableOutputFormat.OUTPUT_TABLE, TableConts.TABLE_NAME_TRAIN);
+        FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
+//        job.getConfiguration().set(TableOutputFormat.OUTPUT_TABLE, TableConts.TABLE_NAME_TRAIN);
 
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
@@ -88,8 +94,8 @@ public class HPopulateTrainigTable {
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             mTable = new HTable(HBaseConfiguration.create(), TableConts.TABLE_NAME_TRAIN);
-            mTable.setAutoFlush(true);
-            mTable.setWriteBufferSize(500);
+            mTable.setAutoFlush(false);
+
         }
 
         @Override
