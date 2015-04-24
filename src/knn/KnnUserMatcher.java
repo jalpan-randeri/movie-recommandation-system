@@ -6,7 +6,6 @@ import java.util.*;
 
 import com.opencsv.CSVParser;
 import conts.*;
-import javafx.scene.control.Tab;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
@@ -18,7 +17,6 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -72,7 +70,7 @@ public class KnnUserMatcher {
     }
 
 
-    public static class KNNMapper extends TableMapper<KeyUserDistance, Text> {
+    public static class KnnMapper extends TableMapper<KeyUserDistance, Text> {
 
         private HashMap<String, AvgReleaseWatch> mCached;
         private CSVParser mParser = new CSVParser();
@@ -173,7 +171,7 @@ public class KnnUserMatcher {
     }
 
 
-    public static class KNNReducer extends Reducer<KeyUserDistance, Text, Text, Text> {
+    public static class KnnReducer extends Reducer<KeyUserDistance, Text, Text, Text> {
         private HTableInterface mDataset;
 
         @Override
@@ -413,7 +411,7 @@ public class KnnUserMatcher {
             }
         }
     }
-//
+
     public static class KeyGrouppingComparator extends WritableComparator{
 
         protected KeyGrouppingComparator() {
@@ -447,8 +445,8 @@ public class KnnUserMatcher {
         Job job = new Job(conf, "Knn");
         job.setJarByClass(KnnUserMatcher.class);
 
-        job.setMapperClass(KNNMapper.class);
-        job.setReducerClass(KNNReducer.class);
+        job.setMapperClass(KnnMapper.class);
+        job.setReducerClass(KnnReducer.class);
 
         job.setGroupingComparatorClass(KeyGrouppingComparator.class);
         job.setSortComparatorClass(KeySortingComparator.class);
@@ -472,7 +470,7 @@ public class KnnUserMatcher {
         scan.setCacheBlocks(false);
         TableMapReduceUtil.initTableMapperJob(TableConts.TABLE_NAME_DATASET,
                 scan,
-                KNNMapper.class,
+                KnnMapper.class,
                 KeyUserDistance.class,
                 Text.class,
                 job);

@@ -11,10 +11,14 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
+import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
+import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.WritableComparable;
@@ -45,17 +49,9 @@ public class HPopulateMovies {
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
 
         Configuration conf = new Configuration();
-        String[] otherArgs = new GenericOptionsParser(args).getRemainingArgs();
 
-        if (otherArgs.length != 2) {
-            System.out.println("Usage HPopulateMovies <Distributed Cache> <Input>");
-            System.exit(1);
-        }
 
-        // TODO: remove this input file and use the HBase as index
-        //  0 - Distributed Cache
-        //  1 - Input file
-        DistributedCache.addCacheFile(new Path(otherArgs[0]).toUri(), conf);
+
 
         generateTable(conf);
 
@@ -68,10 +64,28 @@ public class HPopulateMovies {
         job.setOutputKeyClass(LongWritable.class);
         job.setOutputValueClass(YearRatingNameValue.class);
 
+        job.setInputFormatClass(TableInputFormat.class);
         job.setOutputFormatClass(TableOutputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path(otherArgs[1]));
+
         job.getConfiguration().set(TableOutputFormat.OUTPUT_TABLE, TableConts.TABLE_NAME_DATASET);
+
+
+        Scan scan = new Scan();
+        scan.addFamily(TableConts.FAMILY_TBL_TRAIN.getBytes());
+        scan.addColumn(TableConts.FAMILY_TBL_TRAIN.getBytes(), TableConts.COL_TBL_TRAIN_MOVIE_ID.getBytes());
+        scan.addColumn(TableConts.FAMILY_TBL_TRAIN.getBytes(), TableConts.COL_TBL_TRAING_USER_ID.getBytes());
+        scan.addColumn(TableConts.FAMILY_TBL_TRAIN.getBytes(), TableConts.COL_TBL_TRAIN_RATING.getBytes());
+        scan.addColumn(TableConts.FAMILY_TBL_TRAIN.getBytes(), TableConts.COL_TBL_TRAIN_WATCH_DATE.getBytes());
+        scan.setCaching(500);
+        scan.setCacheBlocks(false);
+        TableMapReduceUtil.initTableMapperJob(TableConts.TABLE_NAME_TRAIN,
+                scan,
+                HMoviesMapper.class,
+                LongWritable.class,
+                YearRatingNameValue.class,
+                job);
+
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
@@ -96,7 +110,7 @@ public class HPopulateMovies {
     }
 
 
-    public static class HMoviesMapper extends Mapper<LongWritable, Text, LongWritable, YearRatingNameValue> {
+    public static class HMoviesMapper extends TableMapper<LongWritable, YearRatingNameValue> {
 
         private HashMap<String, String> mCachedNames = new HashMap<>();
         private HashMap<String, Integer> mCachedYear = new HashMap<>();
@@ -104,46 +118,85 @@ public class HPopulateMovies {
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            Path[] cacheFile = DistributedCache.getLocalCacheFiles(context.getConfiguration());
-            if (cacheFile != null && cacheFile.length > 0) {
-                readFile(cacheFile[0].toString());
-            }
+            readTable();
         }
 
-        /**
-         * read file reads the file which is distributed and added into the HashMap
-         *
-         * @param path input file path
-         */
-        private void readFile(String path) throws IOException {
-            BufferedReader reader = new BufferedReader(new FileReader(path));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] tokens = mParser.parseLine(line);
-                mCachedNames.put(tokens[MovieConts.INDEX_R_MOVIE_ID], tokens[MovieConts.INDEX_R_MOVIE_NAME]);
-                mCachedYear.put(tokens[MovieConts.INDEX_R_MOVIE_ID],
-                        Integer.parseInt(tokens[MovieConts.INDEX_R_MOVIE_YEAR]));
-            }
-            reader.close();
 
+
+        private void readTable() throws IOException {
+            HTable mTable = new HTable(HBaseConfiguration.create(), TableConts.TABLE_NAME_MOVIES);
+
+            // Instantiating the Scan class
+            Scan scan = new Scan();
+
+
+
+            // Scanning the required columns
+            scan.addColumn(TableConts.FAMILY_TBL_MOVIES.getBytes(), TableConts.COL_TBL_MOVIES_NAME.getBytes());
+            scan.addColumn(TableConts.FAMILY_TBL_MOVIES.getBytes(), TableConts.COL_TBL_MOVIES_YEAR.getBytes());
+
+            // Getting the scan result
+            ResultScanner scanner = mTable.getScanner(scan);
+
+            // Reading values from scan result
+
+            for (Result result : scanner) {
+
+                byte[] cb = result.getRow();
+                byte[] c_name = result.getValue(Bytes.toBytes(TableConts.FAMILY_TBL_MOVIES),
+                        Bytes.toBytes(TableConts.COL_TBL_MOVIES_NAME));
+
+                byte[] c_year = result.getValue(Bytes.toBytes(TableConts.FAMILY_TBL_MOVIES),
+                        Bytes.toBytes(TableConts.COL_TBL_MOVIES_YEAR));
+
+                String id = Bytes.toString(cb);
+                int year = Integer.parseInt(Bytes.toString(c_year));
+                String name = Bytes.toString(c_name);
+
+                mCachedNames.put(id, name);
+                mCachedYear.put(id, year);
+
+            }
+            //closing the scanner
+            scanner.close();
+            mTable.close();
         }
 
         @Override
-        protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-            String[] tokens = mParser.parseLine(value.toString());
-
-            long emit_key = Long.parseLong(tokens[MovieConts.INDEX_CUST_ID]);
-
-            int release_year = mCachedYear.get(tokens[MovieConts.INDEX_R_MOVIE_ID]);
-            int rating_year = getYear(tokens[MovieConts.INDEX_MOVIE_RATING_YEAR]);
+        protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
 
 
-            int rating = Integer.parseInt(tokens[MovieConts.INDEX_RATING]);
-            String name = mCachedNames.get(tokens[MovieConts.INDEX_MOVIE_ID]);
+
+            // 1. read the current row
+            KeyValue keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_TRAIN.getBytes(),
+                    TableConts.COL_TBL_TRAIN_MOVIE_ID.getBytes());
+            String movie_id = Bytes.toString(keyValue.getValue());
+
+
+            keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_TRAIN.getBytes(),
+                    TableConts.COL_TBL_TRAING_USER_ID.getBytes());
+            int user_id = Integer.parseInt(Bytes.toString(keyValue.getValue()));
+
+
+            keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_TRAIN.getBytes(),
+                    TableConts.COL_TBL_TRAIN_RATING.getBytes());
+            int rating = Integer.parseInt(Bytes.toString(keyValue.getValue()));
+
+
+            keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_TRAIN.getBytes(),
+                    TableConts.COL_TBL_TRAIN_WATCH_DATE.getBytes());
+            int rating_year = getYear(Bytes.toString(keyValue.getValue()));
+
+
+
+            int release_year = mCachedYear.get(movie_id);
+            String name = mCachedNames.get(movie_id);
             YearRatingNameValue emmit_value = new YearRatingNameValue(rating_year,release_year , rating, name);
 
-            context.write(new LongWritable(emit_key), emmit_value);
+            context.write(new LongWritable(user_id), emmit_value);
         }
+
+
 
 
         /**
