@@ -30,6 +30,14 @@ import java.util.HashMap;
 
 
 /**
+ *
+ * Read dataset.csv file and use the replicated join to convert the dataset
+ * into
+ *
+ * user_id, avg_rating, avg_watch_year, avg_release_year, list_movies
+ *
+ * this will create the table in hbase. TABLE_NETFLIX_DATASET
+ *
  * Created by jalpanranderi on 4/19/15.
  */
 public class HPopulateMovies {
@@ -44,6 +52,7 @@ public class HPopulateMovies {
             System.exit(1);
         }
 
+        // TODO: remove this input file and use the HBase as index
         //  0 - Distributed Cache
         //  1 - Input file
         DistributedCache.addCacheFile(new Path(otherArgs[0]).toUri(), conf);
