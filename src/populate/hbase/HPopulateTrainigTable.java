@@ -88,6 +88,8 @@ public class HPopulateTrainigTable {
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             mTable = new HTable(HBaseConfiguration.create(), TableConts.TABLE_NAME_TRAIN);
+            mTable.setAutoFlush(true);
+            mTable.setWriteBufferSize(500);
         }
 
         @Override
