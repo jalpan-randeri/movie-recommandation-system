@@ -1,0 +1,16 @@
+CREATE EXTERNAL TABLE test1(user String, values map<string, string>)
+STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+WITH SERDEPROPERTIES ("hbase.columns.mapping" = ":key,ratings:")
+TBLPROPERTIES ("hbase.table.name" = "TABLE_USR_RATING");
+
+
+CREATE EXTERNAL TABLE netflix(user string, release_year double, watch_year double, rating double, membership int, movies string)
+STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+WITH SERDEPROPERTIES ("hbase.columns.mapping" = ":key,netflix_dataset:AVG RELEASE YEAR, netflix_dataset:AVG WATCH YEAR, netflix_dataset:AVG_RATING, netflix_dataset:MEMBERSHIP, netflix_dataset:MOVIES")
+TBLPROPERTIES ("hbase.table.name" = "TABLE_NETFLIX_DATASET");
+
+
+CREATE EXTERNAL TABLE knn_answer(user string, release_year double, watch_year double, membership int, movies string)
+STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+WITH SERDEPROPERTIES ("hbase.columns.mapping" = ":key,netflix_dataset:AVG RELEASE YEAR, netflix_dataset:AVG WATCH YEAR,  netflix_dataset:MEMBERSHIP, netflix_dataset:MOVIES")
+TBLPROPERTIES ("hbase.table.name" = "TABLE_NAME_KNN");
