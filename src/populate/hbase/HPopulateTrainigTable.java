@@ -28,7 +28,7 @@ import java.io.IOException;
  * this will reade the dataset.csv file
  * and generate the HBase table -> TABLE_NAME_TRAIN
  *
- * userid+movie_id ,  user_id, movie_id, watch_date, rating
+ * id,  user_id, movie_id, watch_date, rating
  *
  * Created by jalpanranderi on 4/24/15.
  */
@@ -95,10 +95,9 @@ public class HPopulateTrainigTable {
             String[] tokens = mParser.parseLine(value.toString());
 
 
-            String row_key = String.format("%s,%s",tokens[MovieConts.INDEX_CUST_ID], tokens[MovieConts.INDEX_MOVIE_ID]);
+            String row_key = tokens[MovieConts.INDEX_KEY];
+
             Put row = new Put(row_key.getBytes());
-
-
             row.add(TableConts.FAMILY_TBL_TRAIN.getBytes(),
                     TableConts.COL_TBL_TRAING_USER_ID.getBytes(),
                     tokens[MovieConts.INDEX_CUST_ID].getBytes());
@@ -114,8 +113,9 @@ public class HPopulateTrainigTable {
             row.add(TableConts.FAMILY_TBL_TRAIN.getBytes(),
                     TableConts.COL_TBL_TRAIN_RATING.getBytes(),
                     tokens[MovieConts.INDEX_RATING].getBytes());
-
             mTable.put(row);
+
+
 
         }
 
