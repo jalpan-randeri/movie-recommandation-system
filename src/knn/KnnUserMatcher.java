@@ -18,6 +18,7 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Partitioner;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -34,11 +35,48 @@ public class KnnUserMatcher {
 
     public static final int K = 11;
 
+    public static class UserData{
+        public PriorityQueue<UserInfo> queue = new PriorityQueue<>(K, Collections.reverseOrder());
+
+        public void insert(double distance, KeyUserDistance data, String flag){
+            if(queue.size() != K){
+                queue.add(new UserInfo(distance, data, flag));
+            }else{
+                queue.remove();
+                queue.add(new UserInfo(distance, data, flag));
+            }
+        }
+    }
+
+    public static class UserInfo implements Comparator<UserInfo>, Comparable<UserInfo>{
+        public double distance;
+        public KeyUserDistance data;
+        public String flag;
+
+        public UserInfo(double distance, KeyUserDistance data, String flag) {
+            this.distance = distance;
+            this.data = data;
+            this.flag = flag;
+        }
+
+
+        @Override
+        public int compare(UserInfo o1, UserInfo o2) {
+            return Double.compare(o1.distance, o2.distance);
+        }
+
+        @Override
+        public int compareTo(UserInfo o) {
+            return Double.compare(distance, o.distance);
+        }
+    }
+
 
     public static class KNNMapper extends TableMapper<KeyUserDistance, Text> {
 
         private HashMap<String, AvgReleaseWatch> mCached;
         private CSVParser mParser = new CSVParser();
+        private HashMap<String, UserData> mEmmitData = new HashMap<>();
 
         protected void setup(Context context) throws IOException,
                 InterruptedException {
@@ -59,7 +97,7 @@ public class KnnUserMatcher {
             BufferedReader reader = new BufferedReader(new FileReader(path));
             String line;
             while ((line = reader.readLine()) != null) {
-                String[] tokens = mParser.parseLine(line);
+                String[] tokens = mParser.parseLineMulti(line);
                 double avg_watch_year = Double.parseDouble(tokens[MovieConts.INDEX_T_WATCH_YEAR]);
                 double avg_release_year = Double.parseDouble(tokens[MovieConts.INDEX_T_RELEASE_YEAR]);
                 String movies = tokens[MovieConts.INDEX_T_MOVIES];
@@ -91,7 +129,6 @@ public class KnnUserMatcher {
             String membership = Bytes.toString(keyValue.getValue());
 
             // 2. calculate the distance form the all test users
-
             for (String user : mCached.keySet()) {
                 AvgReleaseWatch data = mCached.get(user);
                 double dist = DistanceUtils.getEuclideanDistance(avg_release_year, avg_watched_year,
@@ -99,8 +136,29 @@ public class KnnUserMatcher {
 
                 KeyUserDistance emmit_key = new KeyUserDistance(user, dist, data.watch_year, data.release_year, data.movies);
 
+                // 3. save the data to emmit in the cleanup phase
+                if(mEmmitData.containsKey(user)){
+                    UserData u = mEmmitData.get(user);
+                    u.insert(dist, emmit_key, membership);
+                }else{
+                    UserData u = new UserData();
+                    u.insert(dist, emmit_key, membership);
+                    mEmmitData.put(user, u);
+                }
                 // 3. emmit the (id, dist), user
-                context.write(emmit_key, new Text(membership));
+//                context.write(emmit_key, new Text(membership));
+            }
+        }
+
+        @Override
+        protected void cleanup(Context context) throws IOException, InterruptedException {
+            for(UserData u : mEmmitData.values()){
+                PriorityQueue<UserInfo> queue = u.queue;
+                for(UserInfo info : queue){
+                    if(info != null) {
+                        context.write(info.data, new Text(info.flag));
+                    }
+                }
             }
         }
     }
@@ -113,18 +171,6 @@ public class KnnUserMatcher {
         }
     }
 
-//    public static class KNNGroupComparator extends WritableComparator {
-//        public KNNGroupComparator() {
-//            super(KeyUserDistance.class, true);
-//        }
-//
-//        @Override
-//        public int compare(WritableComparable k1, WritableComparable k2) {
-//            KeyUserDistance key1 = (KeyUserDistance) k1;
-//            KeyUserDistance key2 = (KeyUserDistance) k2;
-//            return KeyUserDistance.compare(key1.getUser(), key2.getUser());
-//        }
-//    }
 
     public static class KNNReducer extends Reducer<KeyUserDistance, Text, Text, Text> {
         private HTableInterface mDataset;

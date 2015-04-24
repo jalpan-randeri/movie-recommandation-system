@@ -19,7 +19,7 @@ public class CSVExporter {
     public static void main(String[] args) throws IOException {
 
 
-        FileWriter writer = new FileWriter("netflix.csv");
+        FileWriter writer = new FileWriter("test.csv");
 
 
         HTable mDataset = new HTable(HBaseConfiguration.create(), TableConts.TABLE_NAME_DATASET);
@@ -70,12 +70,18 @@ public class CSVExporter {
 
             byte[] c_movies = result.getValue(Bytes.toBytes(TableConts.FAMILY_TBL_DATASET),
                     Bytes.toBytes(TableConts.COL_TBL_DATASET_MOVIE_LIST));
-            String movies = Bytes.toString(c_movies);
+            String[] movies = Bytes.toString(c_movies).split(DatasetConts.SEPARATOR);
 
-            String s = String.format("%s,%s,%s,%s,%s,\"%s\"\n", user_id, flag, avg_rating, avg_watch, avg_relasae_year, movies);
-            System.out.println(s);
+            StringBuilder builder = new StringBuilder();
+            for(int i = 0; i < 5 && i < movies.length; i++){
+                builder.append(movies[i]);
+                builder.append(DatasetConts.SEPARATOR);
+            }
+            builder.deleteCharAt(builder.length() - 1);
+
+            String s = String.format("%s,%s,%s,%s,%s,\"%s\"\n", user_id, flag, avg_rating, avg_watch, avg_relasae_year, builder.toString());
             writer.write(s);
-            if(count == 100)
+            if(count == 1000)
                 break;
         }
         //closing the scanner
