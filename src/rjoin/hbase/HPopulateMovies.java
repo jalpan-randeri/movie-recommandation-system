@@ -114,7 +114,7 @@ public class HPopulateMovies {
 
         private HashMap<String, String> mCachedNames = new HashMap<>();
         private HashMap<String, Integer> mCachedYear = new HashMap<>();
-        private CSVParser mParser = new CSVParser();
+
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
@@ -220,8 +220,8 @@ public class HPopulateMovies {
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             mTable = new HTable(HBaseConfiguration.create(), TableConts.TABLE_NAME_DATASET);
-            mTable.setAutoFlush(true);
-            mTable.setWriteBufferSize(TableConts.MB_100);
+            mTable.setAutoFlush(false);
+
         }
 
 
