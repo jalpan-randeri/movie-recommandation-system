@@ -3,6 +3,8 @@ package datanormalizer;
 import java.io.*;
 
 /**
+ * This will create the dataset.csv
+ *
  * Created by jalpanranderi on 4/8/15.
  */
 public class FileJoiner {
