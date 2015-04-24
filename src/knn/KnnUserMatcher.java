@@ -10,7 +10,7 @@ import javafx.scene.control.Tab;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
@@ -62,8 +62,9 @@ public class KnnUserMatcher {
                 String[] tokens = mParser.parseLine(line);
                 double avg_watch_year = Double.parseDouble(tokens[MovieConts.INDEX_T_WATCH_YEAR]);
                 double avg_release_year = Double.parseDouble(tokens[MovieConts.INDEX_T_RELEASE_YEAR]);
+                String movies = tokens[MovieConts.INDEX_T_MOVIES];
 
-                mCached.put(tokens[MovieConts.INDEX_T_USR_ID], new AvgReleaseWatch(avg_release_year, avg_watch_year));
+                mCached.put(tokens[MovieConts.INDEX_T_USR_ID], new AvgReleaseWatch(avg_release_year, avg_watch_year, movies));
 
             }
             reader.close();
@@ -96,7 +97,7 @@ public class KnnUserMatcher {
                 double dist = DistanceUtils.getEuclideanDistance(avg_release_year, avg_watched_year,
                         data.release_year.get(), data.watch_year.get());
 
-                KeyUserDistance emmit_key = new KeyUserDistance(user, dist);
+                KeyUserDistance emmit_key = new KeyUserDistance(user, dist, data.watch_year, data.release_year, data.movies);
 
                 // 3. emmit the (id, dist), user
                 context.write(emmit_key, new Text(membership));
@@ -126,6 +127,17 @@ public class KnnUserMatcher {
 //    }
 
     public static class KNNReducer extends Reducer<KeyUserDistance, Text, Text, Text> {
+        private HTableInterface mDataset;
+
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            mDataset = new HTable(HBaseConfiguration.create(), TableConts.TABLE_NAME_KNN);
+        }
+
+        @Override
+        protected void cleanup(Context context) throws IOException, InterruptedException {
+            mDataset.close();
+        }
 
         @Override
         protected void reduce(KeyUserDistance key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
@@ -144,6 +156,23 @@ public class KnnUserMatcher {
 
             // 3. emmit the result
             context.write(new Text(key.user), new Text(tag));
+            // 4 insert into Hbase
+
+            Put row = new Put(key.user.getBytes());
+            row.add(TableConts.FAMILY_TBL_KNN.getBytes(),
+                    TableConts.COL_TBL_KNN_MEMBERSHIP.getBytes(),
+                    tag.getBytes());
+            row.add(TableConts.FAMILY_TBL_KNN.getBytes(),
+                    TableConts.COL_TBL_KNN_AVG_RELEASE_YEAR.getBytes(),
+                    String.valueOf(key.releaseYear.get()).getBytes());
+            row.add(TableConts.FAMILY_TBL_KNN.getBytes(),
+                    TableConts.COL_TBL_KNN_AVG_WATCHED_YEAR.getBytes(),
+                    String.valueOf(key.watchYear.get()).getBytes());
+            row.add(TableConts.FAMILY_TBL_KNN.getBytes(),
+                    TableConts.COL_TBL_KNN_MOVIE_LIST.getBytes(),
+                    key.movies.getBytes());
+            mDataset.put(row);
+
         }
 
 
@@ -182,16 +211,18 @@ public class KnnUserMatcher {
 
         public DoubleWritable release_year;
         public DoubleWritable watch_year;
-
+        public String movies;
 
         public AvgReleaseWatch() {
             release_year = new DoubleWritable();
             watch_year = new DoubleWritable();
+            movies = "";
         }
 
-        public AvgReleaseWatch(double realse_year, double watch_year) {
+        public AvgReleaseWatch(double realse_year, double watch_year, String movies) {
             this.release_year = new DoubleWritable(realse_year);
             this.watch_year = new DoubleWritable(watch_year);
+            this.movies = movies;
         }
 
 
@@ -227,12 +258,14 @@ public class KnnUserMatcher {
         public void write(DataOutput dataOutput) throws IOException {
             release_year.write(dataOutput);
             watch_year.write(dataOutput);
+            WritableUtils.writeString(dataOutput, movies);
         }
 
         @Override
         public void readFields(DataInput dataInput) throws IOException {
             release_year.readFields(dataInput);
             watch_year.readFields(dataInput);
+            movies = WritableUtils.readString(dataInput);
         }
     }
 
@@ -240,15 +273,24 @@ public class KnnUserMatcher {
 
         public String user;
         public DoubleWritable distance;
-
-        public KeyUserDistance(String user, double distance) {
-            this.user = user;
-            this.distance = new DoubleWritable(distance);
-        }
+        public DoubleWritable watchYear;
+        public DoubleWritable releaseYear;
+        public String movies;
 
         public KeyUserDistance() {
-            user = new String();
-            distance = new DoubleWritable();
+            user = "";
+            distance = new DoubleWritable(0);
+            watchYear = new DoubleWritable(0);
+            releaseYear = new DoubleWritable(0);
+            movies = "";
+        }
+
+        public KeyUserDistance(String user, double distance, DoubleWritable watchYear, DoubleWritable releaseYear, String movies) {
+            this.user = user;
+            this.distance = new DoubleWritable(distance);
+            this.watchYear = watchYear;
+            this.releaseYear = releaseYear;
+            this.movies = movies;
         }
 
         public String getUser() {
@@ -289,12 +331,18 @@ public class KnnUserMatcher {
         public void write(DataOutput dataOutput) throws IOException {
             WritableUtils.writeString(dataOutput, user);
             distance.write(dataOutput);
+            watchYear.write(dataOutput);
+            releaseYear.write(dataOutput);
+            WritableUtils.writeString(dataOutput, movies);
         }
 
         @Override
         public void readFields(DataInput dataInput) throws IOException {
             user = WritableUtils.readString(dataInput);
             distance.readFields(dataInput);
+            watchYear.readFields(dataInput);
+            releaseYear.readFields(dataInput);
+            movies = WritableUtils.readString(dataInput);
         }
     }
 
@@ -344,7 +392,7 @@ public class KnnUserMatcher {
             System.exit(2);
         }
 
-
+        createTable(conf);
         // - 0 Distributed Cache file
         // - 1 Output directory
         DistributedCache.addCacheFile(new Path(otherArgs[0]).toUri(), conf);
@@ -365,6 +413,7 @@ public class KnnUserMatcher {
         job.setOutputKeyClass(KeyUserDistance.class);
         job.setOutputValueClass(Text.class);
 
+
         FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
 
         Scan scan = new Scan();
@@ -383,5 +432,20 @@ public class KnnUserMatcher {
         job.waitForCompletion(true);
 
 
+    }
+
+    private static void createTable(Configuration conf) throws IOException {
+        Configuration co = HBaseConfiguration.create(conf);
+        HBaseAdmin admin = new HBaseAdmin(co);
+
+        // main centroids locations
+        HTableDescriptor hd = new HTableDescriptor(TableConts.TABLE_NAME_KNN);
+        hd.addFamily(new HColumnDescriptor(TableConts.FAMILY_TBL_KNN));
+        if (admin.tableExists(TableConts.TABLE_NAME_KNN)) {
+            admin.disableTable(TableConts.TABLE_NAME_KNN);
+            admin.deleteTable(TableConts.TABLE_NAME_KNN);
+        }
+        admin.createTable(hd);
+        admin.close();
     }
 }

@@ -46,5 +46,14 @@ public class TableConts {
     public static final String COL_TBL_DATASET_MOVIE_LIST = "MOVIES";
     public static final String COL_TBL_DATASET_MEMBERSHIP = "MEMBERSHIP";
 
+    public static final String TABLE_NAME_KNN = "TABLE_NAME_KNN";
+    public static final String FAMILY_TBL_KNN = "netflix_dataset";
+    public static final String KEY_TBL_KNN = "KEY_USR_ID";
+    public static final String COL_TBL_KNN_AVG_WATCHED_YEAR = "AVG WATCH YEAR";
+    public static final String COL_TBL_KNN_AVG_RELEASE_YEAR = "AVG RELEASE YEAR";
+    public static final String COL_TBL_KNN_MOVIE_LIST = "MOVIES";
+    public static final String COL_TBL_KNN_MEMBERSHIP = "MEMBERSHIP";
+
+
     public static final int MB_100 = 102400;
 }

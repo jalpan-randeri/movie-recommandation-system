@@ -23,4 +23,5 @@ public class MovieConts {
     public static final int INDEX_T_WATCH_YEAR = 3;
     public static final int INDEX_T_RELEASE_YEAR = 4;
 
+    public static final int INDEX_T_MOVIES = 5;
 }

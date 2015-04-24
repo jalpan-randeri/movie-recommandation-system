@@ -36,12 +36,18 @@ public class CSVExporter {
         scan.addColumn(TableConts.FAMILY_TBL_DATASET.getBytes(),
                 TableConts.COL_TBL_DATASET_MEMBERSHIP.getBytes());
 
+        scan.addColumn(TableConts.FAMILY_TBL_DATASET.getBytes(),
+                TableConts.COL_TBL_DATASET_MOVIE_LIST.getBytes());
+
+
         // Getting the scan result
         ResultScanner scanner = mDataset.getScanner(scan);
 
 
         // Reading values from scan result
+        int count = 0;
         for (Result result : scanner) {
+            count++;
 
             byte[] cb = result.getRow();
             String user_id = Bytes.toString(cb);
@@ -66,10 +72,11 @@ public class CSVExporter {
                     Bytes.toBytes(TableConts.COL_TBL_DATASET_MOVIE_LIST));
             String movies = Bytes.toString(c_movies);
 
-            String s = String.format("%s,%s,%s,%s,%s\n", user_id, flag, avg_rating, avg_watch, avg_relasae_year);
+            String s = String.format("%s,%s,%s,%s,%s,\"%s\"\n", user_id, flag, avg_rating, avg_watch, avg_relasae_year, movies);
             System.out.println(s);
             writer.write(s);
-
+            if(count == 100)
+                break;
         }
         //closing the scanner
         scanner.close();
