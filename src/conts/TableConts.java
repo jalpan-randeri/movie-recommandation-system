@@ -33,16 +33,44 @@ public class TableConts {
     // KMeans user cluster membership table
     public static final String TABLE_NAME_CLUSTERS = "TABLE_USR_CLUSTER";
     public static final String FAMILY_CLUSTERS = "clusters";
-    public static final String TABLE_CLUSTERS_COL_CLUSTER_ID = "CLUSTER_ID";
-    public static final String TABLE_CLUSTERS_COLUMN_MEMBERS = "CLUSTER_MEMBERS";
+    public static final String COL_TBL_CLUSTERS__CLUSTER_ID = "CLUSTER_ID";
+    public static final String COL_TBL_CLUSTERS_MEMBERS = "CLUSTER_MEMBERS";
 
 
     public static final String TABLE_NAME_DATASET = "TABLE_NETFLIX_DATASET";
     public static final String FAMILY_TBL_DATASET = "netflix_dataset";
     public static final String KEY_TBL_DATASET = "KEY_USR_ID";
     public static final String COL_TBL_DATASET_AVG_RATING = "AVG_RATING";
-    public static final String COL_TBL_DATASET_AVG_YEAR = "AVG_YEAR";
+    public static final String COL_TBL_DATASET_AVG_WATCHED_YEAR = "AVG WATCH YEAR";
+    public static final String COL_TBL_DATASET_AVG_RELEASE_YEAR = "AVG RELEASE YEAR";
     public static final String COL_TBL_DATASET_MOVIE_LIST = "MOVIES";
+    public static final String COL_TBL_DATASET_MEMBERSHIP = "MEMBERSHIP";
+
+    public static final String TABLE_NAME_KNN = "TABLE_NAME_KNN";
+    public static final String FAMILY_TBL_KNN = "netflix_dataset";
+    public static final String KEY_TBL_KNN = "KEY_USR_ID";
+    public static final String COL_TBL_KNN_AVG_WATCHED_YEAR = "AVG WATCH YEAR";
+    public static final String COL_TBL_KNN_AVG_RELEASE_YEAR = "AVG RELEASE YEAR";
+    public static final String COL_TBL_KNN_MOVIE_LIST = "MOVIES";
+    public static final String COL_TBL_KNN_MEMBERSHIP = "MEMBERSHIP";
+
+
+    // Training dataset
+    public static final String TABLE_NAME_TRAIN = "TABLE_NAME_TRAIN";
+    public static final String FAMILY_TBL_TRAIN = "training";
+    public static final String KEY_TBL_TRAIN = "user_id + movie id";
+    public static final String COL_TBL_TRAING_USER_ID = "USER ID";
+    public static final String COL_TBL_TRAIN_MOVIE_ID = "MOVIE ID";
+    public static final String COL_TBL_TRAIN_WATCH_DATE = "WATCH DATE";
+    public static final String COL_TBL_TRAIN_RATING = "RATING";
+
+
+    // Movines dataset
+    public static final String TABLE_NAME_MOVIES = "TABLE_NAME_MOVIES";
+    public static final String FAMILY_TBL_MOVIES = "movies";
+    public static final String KEY_TBL_MOVIES = "movie_id";
+    public static final String COL_TBL_MOVIES_NAME = "movie_name";
+    public static final String COL_TBL_MOVIES_YEAR = "movie_realse_year";
 
 
     public static final int MB_100 = 102400;

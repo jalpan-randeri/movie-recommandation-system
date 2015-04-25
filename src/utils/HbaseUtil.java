@@ -33,10 +33,10 @@ public class HbaseUtil {
 
 
     /**
-     * get the average rating and movie year of the user
+     * get the average rating and movie watch_year of the user
      * @param table HTable interface to access the hbase
      * @param userid String user id
-     * @return RatYear object as the pair of the average rating and average year;
+     * @return RatYear object as the pair of the average rating and average watch_year;
      * @throws IOException
      */
     public static RatYear getUserAvgRatingYear(HTableInterface table, long userid) throws IOException {
@@ -48,7 +48,7 @@ public class HbaseUtil {
                 Bytes.toBytes(TableConts.COL_TBL_DATASET_AVG_RATING));
 
         byte[] b_year = row.getValue(Bytes.toBytes(TableConts.FAMILY_TBL_DATASET),
-                Bytes.toBytes(TableConts.COL_TBL_DATASET_AVG_YEAR));
+                Bytes.toBytes(TableConts.COL_TBL_DATASET_AVG_WATCHED_YEAR));
 
 
         return new RatYear(Bytes.toInt(b_year), Bytes.toInt(b_rating));

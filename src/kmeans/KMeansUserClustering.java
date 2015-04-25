@@ -17,7 +17,7 @@ package kmeans;
 import conts.DatasetConts;
 import conts.KMeansConts;
 import conts.TableConts;
-import hbase_populate.model.Centroid;
+import kmeans.model.Centroid;
 import kmeans.mappers.KMeansMapper;
 import kmeans.model.EmitValue;
 import kmeans.reducers.KMeansReducer;
@@ -79,6 +79,7 @@ public class KMeansUserClustering {
 
 
             Scan scan = new Scan();
+            scan.addFamily(TableConts.FAMILY_TBL_DATASET.getBytes());
             scan.setCaching(500);
             scan.setCacheBlocks(false);
             TableMapReduceUtil.initTableMapperJob(TableConts.TABLE_NAME_DATASET,

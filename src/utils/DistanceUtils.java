@@ -129,14 +129,14 @@ public class DistanceUtils {
 
 
     /**
-     * returns eculidean distance of two vectors
+     * returns euclidean distance of two vectors
      * @param x1 double as Average1
      * @param y1 double as Rating1
      * @param x2 double as Average2
      * @param y2 double as Rating2
      * @return Integer manhattan distance of the two vectors
      */
-    public static double getEucilideanDistance(double x1, double y1, double x2, double y2){
+    public static double getEuclideanDistance(double x1, double y1, double x2, double y2){
         return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
     }
 

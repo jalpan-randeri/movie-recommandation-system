@@ -1,35 +1,37 @@
 package rjoin.hbase;
 
 
-import com.opencsv.CSVParser;
 import conts.DatasetConts;
-import conts.MovieConts;
 import conts.TableConts;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.filecache.DistributedCache;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.KeyValue;
+import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.TableInputFormat;
+import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
+import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.io.WritableUtils;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.util.GenericOptionsParser;
 
 import java.io.*;
 import java.util.HashMap;
 
 
 /**
+ *
+ * Read dataset.csv file and use the replicated join to convert the dataset
+ * into
+ *
+ * user_id, avg_rating, avg_watch_year, avg_release_year, list_movies
+ *
+ * this will create the table in hbase. TABLE_NETFLIX_DATASET
+ *
  * Created by jalpanranderi on 4/19/15.
  */
 public class HPopulateMovies {
@@ -37,17 +39,9 @@ public class HPopulateMovies {
     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
 
         Configuration conf = new Configuration();
-        String[] otherArgs = new GenericOptionsParser(args).getRemainingArgs();
 
-        if (otherArgs.length != 2) {
-            System.out.println("Usage HPopulateMovies <Distributed Cache> <Input>");
-            System.exit(1);
-        }
 
-        //  0 - Distributed Cache
-        //  1 - Input file
-        //  2 - Output directory
-        DistributedCache.addCacheFile(new Path(otherArgs[0]).toUri(), conf);
+
 
         generateTable(conf);
 
@@ -60,10 +54,28 @@ public class HPopulateMovies {
         job.setOutputKeyClass(LongWritable.class);
         job.setOutputValueClass(YearRatingNameValue.class);
 
+        job.setInputFormatClass(TableInputFormat.class);
         job.setOutputFormatClass(TableOutputFormat.class);
 
-        FileInputFormat.setInputPaths(job, new Path(otherArgs[1]));
+
         job.getConfiguration().set(TableOutputFormat.OUTPUT_TABLE, TableConts.TABLE_NAME_DATASET);
+
+
+        Scan scan = new Scan();
+        scan.addFamily(TableConts.FAMILY_TBL_TRAIN.getBytes());
+        scan.addColumn(TableConts.FAMILY_TBL_TRAIN.getBytes(), TableConts.COL_TBL_TRAIN_MOVIE_ID.getBytes());
+        scan.addColumn(TableConts.FAMILY_TBL_TRAIN.getBytes(), TableConts.COL_TBL_TRAING_USER_ID.getBytes());
+        scan.addColumn(TableConts.FAMILY_TBL_TRAIN.getBytes(), TableConts.COL_TBL_TRAIN_RATING.getBytes());
+        scan.addColumn(TableConts.FAMILY_TBL_TRAIN.getBytes(), TableConts.COL_TBL_TRAIN_WATCH_DATE.getBytes());
+        scan.setCaching(500);
+        scan.setCacheBlocks(false);
+        TableMapReduceUtil.initTableMapperJob(TableConts.TABLE_NAME_TRAIN,
+                scan,
+                HMoviesMapper.class,
+                LongWritable.class,
+                YearRatingNameValue.class,
+                job);
+
 
         System.exit(job.waitForCompletion(true) ? 0 : 1);
     }
@@ -88,61 +100,100 @@ public class HPopulateMovies {
     }
 
 
-    public static class HMoviesMapper extends Mapper<LongWritable, Text, LongWritable, YearRatingNameValue> {
+    public static class HMoviesMapper extends TableMapper<LongWritable, YearRatingNameValue> {
 
         private HashMap<String, String> mCachedNames = new HashMap<>();
         private HashMap<String, Integer> mCachedYear = new HashMap<>();
-        private CSVParser mParser = new CSVParser();
+
 
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
-            Path[] cacheFile = DistributedCache.getLocalCacheFiles(context.getConfiguration());
-            if (cacheFile != null && cacheFile.length > 0) {
-                readFile(cacheFile[0].toString());
-            }
+            readTable();
         }
 
-        /**
-         * read file reads the file which is distributed and added into the HashMap
-         *
-         * @param path input file path
-         */
-        private void readFile(String path) throws IOException {
-            BufferedReader reader = new BufferedReader(new FileReader(path));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] tokens = mParser.parseLine(line);
-                mCachedNames.put(tokens[MovieConts.INDEX_R_MOVIE_ID], tokens[MovieConts.INDEX_R_MOVIE_NAME]);
-                mCachedYear.put(tokens[MovieConts.INDEX_R_MOVIE_ID],
-                        Integer.parseInt(tokens[MovieConts.INDEX_R_MOVIE_YEAR]));
-            }
-            reader.close();
 
+
+        private void readTable() throws IOException {
+            HTable mTable = new HTable(HBaseConfiguration.create(), TableConts.TABLE_NAME_MOVIES);
+
+            // Instantiating the Scan class
+            Scan scan = new Scan();
+
+
+
+            // Scanning the required columns
+            scan.addColumn(TableConts.FAMILY_TBL_MOVIES.getBytes(), TableConts.COL_TBL_MOVIES_NAME.getBytes());
+            scan.addColumn(TableConts.FAMILY_TBL_MOVIES.getBytes(), TableConts.COL_TBL_MOVIES_YEAR.getBytes());
+
+            // Getting the scan result
+            ResultScanner scanner = mTable.getScanner(scan);
+
+            // Reading values from scan result
+
+            for (Result result : scanner) {
+
+                byte[] cb = result.getRow();
+                byte[] c_name = result.getValue(Bytes.toBytes(TableConts.FAMILY_TBL_MOVIES),
+                        Bytes.toBytes(TableConts.COL_TBL_MOVIES_NAME));
+
+                byte[] c_year = result.getValue(Bytes.toBytes(TableConts.FAMILY_TBL_MOVIES),
+                        Bytes.toBytes(TableConts.COL_TBL_MOVIES_YEAR));
+
+                String id = Bytes.toString(cb);
+                int year = Integer.parseInt(Bytes.toString(c_year));
+                String name = Bytes.toString(c_name);
+
+                mCachedNames.put(id, name);
+                mCachedYear.put(id, year);
+
+            }
+            //closing the scanner
+            scanner.close();
+            mTable.close();
         }
 
         @Override
-        protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
-            String[] tokens = mParser.parseLine(value.toString());
+        protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
 
-            long emit_key = Long.parseLong(tokens[MovieConts.INDEX_CUST_ID]);
 
-//            int movie_year = mCachedYear.get(tokens[MovieConts.INDEX_R_MOVIE_ID]);
-            int rating_year = getYear(tokens[MovieConts.INDEX_MOVIE_RATING_YEAR]);
-            int year = rating_year;// - movie_year;
 
-            int rating = Integer.parseInt(tokens[MovieConts.INDEX_RATING]);
-            String name = mCachedNames.get(tokens[MovieConts.INDEX_MOVIE_ID]);
-            YearRatingNameValue emmit_value = new YearRatingNameValue(year, rating, name);
+            // 1. read the current row
+            KeyValue keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_TRAIN.getBytes(),
+                    TableConts.COL_TBL_TRAIN_MOVIE_ID.getBytes());
+            String movie_id = Bytes.toString(keyValue.getValue());
 
-            context.write(new LongWritable(emit_key), emmit_value);
+
+            keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_TRAIN.getBytes(),
+                    TableConts.COL_TBL_TRAING_USER_ID.getBytes());
+            int user_id = Integer.parseInt(Bytes.toString(keyValue.getValue()));
+
+
+            keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_TRAIN.getBytes(),
+                    TableConts.COL_TBL_TRAIN_RATING.getBytes());
+            double rating = Integer.parseInt(Bytes.toString(keyValue.getValue())) - 2.5;
+
+
+            keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_TRAIN.getBytes(),
+                    TableConts.COL_TBL_TRAIN_WATCH_DATE.getBytes());
+            int rating_year = getYear(Bytes.toString(keyValue.getValue()));
+
+
+
+            int release_year = mCachedYear.get(movie_id);
+            String name = mCachedNames.get(movie_id);
+            YearRatingNameValue emmit_value = new YearRatingNameValue(rating_year,release_year , rating, name);
+
+            context.write(new LongWritable(user_id), emmit_value);
         }
 
 
+
+
         /**
-         * get year will return the year form the string
+         * get watch_year will return the watch_year form the string
          *
          * @param year String date representation as yyyy-mm-dd
-         * @return int year
+         * @return int watch_year
          */
         private int getYear(String year) {
             return Integer.parseInt(year.substring(0, 4));
@@ -159,7 +210,7 @@ public class HPopulateMovies {
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             mTable = new HTable(HBaseConfiguration.create(), TableConts.TABLE_NAME_DATASET);
-            mTable.setAutoFlush(true);
+            mTable.setAutoFlush(false);
             mTable.setWriteBufferSize(TableConts.MB_100);
         }
 
@@ -167,14 +218,18 @@ public class HPopulateMovies {
 
         @Override
         protected void reduce(LongWritable key, Iterable<YearRatingNameValue> values, Context context) throws IOException, InterruptedException {
-            double total_year = 0;
-            long count = 0;
+
+            // 1. get the data from the list
+            double total_watch_year = 0;
+            double total_release_year = 0;
             double total_rating = 0;
+            long count = 0;
 
             StringBuilder movies = new StringBuilder();
             for (YearRatingNameValue v : values) {
-                total_year = total_year + v.year;
-                total_rating = total_rating + v.rating;
+                total_watch_year = total_watch_year + v.watch_year;
+                total_rating = total_rating + v.rating.get();
+                total_release_year = total_release_year + v.release_year;
                 count++;
                 movies.append(v.name);
                 movies.append(DatasetConts.SEPARATOR);
@@ -182,20 +237,28 @@ public class HPopulateMovies {
             movies.deleteCharAt(movies.length() - 1);
 
             double avg_rating = Math.round(total_rating / count);
-            double avg_year = Math.round(total_year / count);
+            double avg_watch_year = Math.round(total_watch_year / count);
+            double avg_release_year = Math.round(total_release_year / count);
 
+
+
+            // 2. add the item into the HBase table
             Put row = new Put(String.valueOf(key.get()).getBytes());
             row.add(TableConts.FAMILY_TBL_DATASET.getBytes(),
                     TableConts.COL_TBL_DATASET_AVG_RATING.getBytes(),
                     String.valueOf(avg_rating).getBytes());
 
             row.add(TableConts.FAMILY_TBL_DATASET.getBytes(),
-                    TableConts.COL_TBL_DATASET_AVG_YEAR.getBytes(),
-                    String.valueOf(avg_year).getBytes());
+                    TableConts.COL_TBL_DATASET_AVG_WATCHED_YEAR.getBytes(),
+                    String.valueOf(avg_watch_year).getBytes());
 
             row.add(TableConts.FAMILY_TBL_DATASET.getBytes(),
                     TableConts.COL_TBL_DATASET_MOVIE_LIST.getBytes(),
                     movies.toString().getBytes());
+
+            row.add(TableConts.FAMILY_TBL_DATASET.getBytes(),
+                    TableConts.COL_TBL_DATASET_AVG_RELEASE_YEAR.getBytes(),
+                    String.valueOf(avg_release_year).getBytes());
 
             mTable.put(row);
         }
@@ -212,20 +275,23 @@ public class HPopulateMovies {
 
     public static class YearRatingNameValue implements WritableComparable<YearRatingNameValue> {
 
-        public int year;
-        public int rating;
+        public int watch_year;
+        public DoubleWritable rating;
+        public int release_year;
         public String name;
 
         public YearRatingNameValue() {
-            year = 0;
-            rating = 0;
+            watch_year = 0;
+            rating = new DoubleWritable(0);
+            release_year = 0;
             name = null;
         }
 
-        public YearRatingNameValue(int mYear, int mRating, String mName) {
-            this.year = mYear;
-            this.rating = mRating;
+        public YearRatingNameValue(int watch_year,  int release_year, double rating, String mName) {
+            this.watch_year = watch_year;
+            this.rating = new DoubleWritable(rating);
             this.name = mName;
+            this.release_year = release_year;
         }
 
 
@@ -236,7 +302,7 @@ public class HPopulateMovies {
 
             YearRatingNameValue ratYKey = (YearRatingNameValue) o;
 
-            if (year != ratYKey.year) return false;
+            if (watch_year != ratYKey.watch_year) return false;
             if (rating != ratYKey.rating) return false;
             return !(name != null ? !name.equals(ratYKey.name) : ratYKey.name != null);
 
@@ -244,23 +310,25 @@ public class HPopulateMovies {
 
         @Override
         public int hashCode() {
-            int result = year;
-            result = 31 * result + rating;
+            int result = watch_year;
+            result = (int) (31 * result + rating.get());
             result = 31 * result + (name != null ? name.hashCode() : 0);
             return result;
         }
 
         @Override
         public void write(DataOutput dataOutput) throws IOException {
-            WritableUtils.writeVInt(dataOutput, year);
-            WritableUtils.writeVInt(dataOutput, rating);
+            WritableUtils.writeVInt(dataOutput, watch_year);
+            rating.write(dataOutput);
+            WritableUtils.writeVInt(dataOutput, release_year);
             WritableUtils.writeString(dataOutput, name);
         }
 
         @Override
         public void readFields(DataInput dataInput) throws IOException {
-            year = WritableUtils.readVInt(dataInput);
-            rating = WritableUtils.readVInt(dataInput);
+            watch_year = WritableUtils.readVInt(dataInput);
+            rating.readFields(dataInput);
+            release_year = WritableUtils.readVInt(dataInput);
             name = WritableUtils.readString(dataInput);
         }
 
@@ -269,8 +337,8 @@ public class HPopulateMovies {
             if (!name.equals(o.name)) {
                 return name.compareTo(o.name);
             } else {
-                return Integer.compare(year, o.year) == 0 ?
-                        Integer.compare(rating, o.rating) : 0;
+                return Integer.compare(watch_year, o.watch_year) == 0 ?
+                        Double.compare(rating.get(), o.rating.get()) : 0;
             }
         }
     }
