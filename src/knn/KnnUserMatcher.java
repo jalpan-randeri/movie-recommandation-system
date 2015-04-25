@@ -110,8 +110,7 @@ public class KnnUserMatcher {
 
         @Override
         protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
-            String sid = Bytes.toString(key.get());
-            long id = Long.parseLong(sid);
+
 
             // 1. read the current row
             KeyValue keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_DATASET.getBytes(),
@@ -433,8 +432,8 @@ public class KnnUserMatcher {
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(conf, args)
                 .getRemainingArgs();
-        if (otherArgs.length != 1) {
-            System.err.println("Usage: KNN <distrubuted> ");
+        if (otherArgs.length != 2) {
+            System.err.println("Usage: KNN <distrubuted> <output>");
             System.exit(2);
         }
 
@@ -460,7 +459,7 @@ public class KnnUserMatcher {
         job.setOutputValueClass(Text.class);
 
 
-//        FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
+        FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
         job.getConfiguration().set(TableOutputFormat.OUTPUT_TABLE, TableConts.TABLE_NAME_KNN);
 
         Scan scan = new Scan();

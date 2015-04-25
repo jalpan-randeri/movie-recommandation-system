@@ -3,10 +3,6 @@ package hive.mr;
 import conts.DatasetConts;
 import conts.KMeansConts;
 import conts.TableConts;
-import kmeans.KMeansUserClustering;
-import kmeans.mappers.KMeansMapper;
-import kmeans.model.EmitValue;
-import kmeans.reducers.KMeansReducer;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
@@ -17,11 +13,8 @@ import org.apache.hadoop.hbase.client.Scan;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
-import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
-
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
@@ -156,13 +149,12 @@ public class MoviePredictor {
     public static class PredictorReducer extends Reducer<Text, Text, Text, Text>{
         @Override
         protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-            StringBuilder builder = new StringBuilder();
+
             for(Text t : values){
-                builder.append(t.toString());
-                builder.append(DatasetConts.SEPARATOR);
+                context.write(key, t);
             }
 
-            context.write(key, new Text(builder.toString()));
+
         }
     }
 

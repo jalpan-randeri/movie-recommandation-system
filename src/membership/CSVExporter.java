@@ -73,7 +73,7 @@ public class CSVExporter {
             String[] movies = Bytes.toString(c_movies).split(DatasetConts.SEPARATOR);
 
             StringBuilder builder = new StringBuilder();
-            for(int i = 0; i < 4 && i < movies.length; i++){
+            for(int i = 0;  i < movies.length; i++){
                 builder.append(movies[i]);
                 builder.append(DatasetConts.SEPARATOR);
             }

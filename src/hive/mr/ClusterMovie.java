@@ -13,7 +13,6 @@ import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
-import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
@@ -51,11 +50,6 @@ public class ClusterMovie {
 
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(NullWritable.class);
-
-
-
-
-//        job.getConfiguration().set(TableOutputFormat.OUTPUT_TABLE, TableConts.TABLE_NAME_CLUSTER_MOVIES);
 
         FileOutputFormat.setOutputPath(job, new Path(otherArgs[0]));
 
@@ -111,7 +105,7 @@ public class ClusterMovie {
                     TableConts.COL_TBL_DATASET_MEMBERSHIP.getBytes());
             String cluster_id = Bytes.toString(keyValue.getValue());
 
-            // 2. read the movie names
+            // 2. read the movie ids
             keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_DATASET.getBytes(),
                     TableConts.COL_TBL_DATASET_MOVIE_LIST.getBytes());
             String movies = Bytes.toString(keyValue.getValue());

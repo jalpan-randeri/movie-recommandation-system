@@ -122,7 +122,7 @@ public class HPopulateMovies {
 
 
             // Scanning the required columns
-            scan.addColumn(TableConts.FAMILY_TBL_MOVIES.getBytes(), TableConts.COL_TBL_MOVIES_NAME.getBytes());
+//            scan.addColumn(TableConts.FAMILY_TBL_MOVIES.getBytes(), TableConts.COL_TBL_MOVIES_NAME.getBytes());
             scan.addColumn(TableConts.FAMILY_TBL_MOVIES.getBytes(), TableConts.COL_TBL_MOVIES_YEAR.getBytes());
 
             // Getting the scan result
@@ -133,15 +133,15 @@ public class HPopulateMovies {
             for (Result result : scanner) {
 
                 byte[] cb = result.getRow();
-                byte[] c_name = result.getValue(Bytes.toBytes(TableConts.FAMILY_TBL_MOVIES),
-                        Bytes.toBytes(TableConts.COL_TBL_MOVIES_NAME));
+//                byte[] c_name = result.getValue(Bytes.toBytes(TableConts.FAMILY_TBL_MOVIES),
+//                        Bytes.toBytes(TableConts.COL_TBL_MOVIES_NAME));
 
                 byte[] c_year = result.getValue(Bytes.toBytes(TableConts.FAMILY_TBL_MOVIES),
                         Bytes.toBytes(TableConts.COL_TBL_MOVIES_YEAR));
 
                 String id = Bytes.toString(cb);
                 int year = Integer.parseInt(Bytes.toString(c_year));
-                String name = Bytes.toString(c_name);
+//                String name = Bytes.toString(c_name);
 
 //                mCachedNames.put(id, name);
                 mCachedYear.put(id, year);
