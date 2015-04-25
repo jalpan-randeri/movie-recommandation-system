@@ -74,4 +74,8 @@ public class TableConts {
 
 
     public static final int MB_100 = 102400;
+    public static final String TABLE_NAME_CLUSTER_MOVIES = "TABLE_NAME_CLUSTER_MOVIE";
+    public static final String FAMILY_TBL_CLUSTER_MOVIES = "cluster_movies";
+    public static final String KEY_TBL_CLUSTER_MOVIES = "cluster_id + movie";
+    public static final String COL_TBL_CLUSTER_MOVIES_DUMMY = "dummy";
 }

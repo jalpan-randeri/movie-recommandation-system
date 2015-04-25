@@ -14,6 +14,7 @@ import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
@@ -199,8 +200,8 @@ public class KnnUserMatcher {
             // 2. find the best match
             String tag = getMostOccuring(neighbours);
 
-            // 3. emmit the result
-            context.write(new Text(key.user), new Text(tag));
+//            // 3. emmit the result
+//            context.write(new Text(key.user), new Text(tag));
             // 4 insert into Hbase
 
             Put row = new Put(key.user.getBytes());
@@ -432,8 +433,8 @@ public class KnnUserMatcher {
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(conf, args)
                 .getRemainingArgs();
-        if (otherArgs.length != 2) {
-            System.err.println("Usage: KNN <distrubuted> <output>");
+        if (otherArgs.length != 1) {
+            System.err.println("Usage: KNN <distrubuted> ");
             System.exit(2);
         }
 
@@ -459,7 +460,8 @@ public class KnnUserMatcher {
         job.setOutputValueClass(Text.class);
 
 
-        FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
+//        FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
+        job.getConfiguration().set(TableOutputFormat.OUTPUT_TABLE, TableConts.TABLE_NAME_KNN);
 
         Scan scan = new Scan();
         scan.addFamily(TableConts.FAMILY_TBL_DATASET.getBytes());
