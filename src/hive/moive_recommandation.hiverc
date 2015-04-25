@@ -1,0 +1,18 @@
+Set hive.auto.convert.join=false
+
+INSERT OVERWRITE LOCAL DIRECTORY 'uniqueMovie'
+select knn.user, split(u.movies, ',')[0], split(u.movies, ',')[1], split(u.movies, ',')[2], split(u.movies, ',')[3]
+from knn_answer knn
+JOIN cluster_unique u
+ON knn.membership = u.id;
+
+
+LOAD DATA LOCAL INPATH 'uniqueMovie' OVERWRITE INTO TABLE ans_ids;
+
+
+INSERT OVERWRITE LOCAL DIRECTORY 'prediction'
+select a.user_id, m.name
+from ans_ids a
+JOIN movie_table m
+ON
+a.m1 = m.id;

@@ -79,4 +79,13 @@ public class TableConts {
     public static final String KEY_TBL_CLUSTER_MOVIES = "cluster_id + movie";
     public static final String COL_TBL_CLUSTER_MOVIES_CLUSTER = "cluster_id";
     public static final String COL_TBL_CLUSTER_MOVIES_MOVIE = "movie_id";
+
+
+
+
+    // CLuster Unique Movies
+    public static final String TABLE_NAME_CLUSTER_UNIQUE = "Unique_Movies";
+    public static final String FAMILY_TBL_CLU_UNIQUE = "clu_movies";
+    public static final String KEY_TBL_CLUSTER_ID = "cluster_id";
+    public static final String COL_TBL_CLU_UNIQUE_MOVIES = "movies";
 }

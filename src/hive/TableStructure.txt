@@ -1,8 +1,3 @@
-CREATE EXTERNAL TABLE test1(user String, values map<string, string>)
-STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
-WITH SERDEPROPERTIES ("hbase.columns.mapping" = ":key,ratings:")
-TBLPROPERTIES ("hbase.table.name" = "TABLE_USR_RATING");
-
 --- NETFLIX Training Data---
 CREATE EXTERNAL TABLE netflix(user string, release_year double, watch_year double, rating double, membership int, movies string)
 STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
@@ -30,3 +25,13 @@ CREATE EXTERNAL TABLE movie_table(id string, name string, year string)
 STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
 WITH SERDEPROPERTIES ("hbase.columns.mapping" = ":key,movies:movie_name, movies:movie_realse_year")
 TBLPROPERTIES ("hbase.table.name" = "TABLE_NAME_MOVIES");
+
+
+-- Movie Unique Cluster Mapping Table
+CREATE EXTERNAL TABLE cluster_unique(id string, movies string)
+STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+WITH SERDEPROPERTIES ("hbase.columns.mapping" = ":key,clu_movies:movies")
+TBLPROPERTIES ("hbase.table.name" = "Unique_Movies");
+
+
+CREATE TABLE ans_ids(user_id String, movie String);
