@@ -88,7 +88,7 @@ public class KnnUserMatcher {
 
         /**
          * read file reads the file which is distributed and added into the HashMap
-         *
+         * this is comment
          * @param path input file path
          */
         private void readFile(String path) throws IOException {
