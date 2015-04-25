@@ -1,9 +1,12 @@
 package hive.mr;
 
+import com.opencsv.CSVParser;
 import conts.DatasetConts;
 import conts.KMeansConts;
+import conts.MovieConts;
 import conts.TableConts;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.HTable;
@@ -16,10 +19,13 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -38,10 +44,14 @@ public class MoviePredictor {
         String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
 
 
-        if(otherArgs.length != 1){
-            System.out.println("Usage: Movie Predictor <output>");
+        if(otherArgs.length != 2){
+            System.out.println("Usage: Movie Predictor movie_title.txt <output>");
             System.exit(1);
         }
+
+
+        DistributedCache.addCacheFile(new Path(otherArgs[0]).toUri(), conf);
+
 
         Job job = new Job(conf, "Movie Predictor");
         job.setJarByClass(MoviePredictor.class);
@@ -54,7 +64,7 @@ public class MoviePredictor {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(Text.class);
 
-        FileOutputFormat.setOutputPath(job, new Path(otherArgs[0]));
+        FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
 
         Scan scan = new Scan();
         scan.addFamily(TableConts.FAMILY_TBL_CLUSTER_MOVIES.getBytes());
@@ -147,12 +157,45 @@ public class MoviePredictor {
 
 
     public static class PredictorReducer extends Reducer<Text, Text, Text, Text>{
+
+        private CSVParser mParser = new CSVParser();
+        private HashMap<String, String> mCachedNames = new HashMap<>();
+
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            Path[] cacheFile = DistributedCache.getLocalCacheFiles(context.getConfiguration());
+            if (cacheFile != null && cacheFile.length > 0) {
+                readFile(cacheFile[0].toString());
+            }
+        }
+
+        /**
+         * read file reads the file which is distributed and added into the HashMap
+         *
+         * @param path input file path
+         */
+        private void readFile(String path) throws IOException {
+            BufferedReader reader = new BufferedReader(new FileReader(path));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] tokens = mParser.parseLine(line);
+                mCachedNames.put(tokens[MovieConts.INDEX_R_MOVIE_ID], tokens[MovieConts.INDEX_R_MOVIE_NAME]);
+            }
+            reader.close();
+        }
+
+
+
         @Override
         protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
-
+            int i = 0;
             for(Text t : values){
-                String ans = String.format("%s,%s",key.toString(), t.toString());
+                i++;
+                String ans = String.format("%s,%s",key.toString(), mCachedNames.get(t.toString()));
                 context.write(new Text(), new Text(ans));
+                if(i == 10){
+                    break;
+                }
             }
 
 
