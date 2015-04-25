@@ -45,3 +45,5 @@ Major Task 4 : Hive Join vs Map Reduce Join
         -
 
     1. Join using Map Reduce
+        - java MoviePredictor output/moviePredictor
+        - java MovieNamePredictor output movie_titles.txt /moviePredictor output/movieNamePrediction

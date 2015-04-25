@@ -151,7 +151,8 @@ public class MoviePredictor {
         protected void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException {
 
             for(Text t : values){
-                context.write(key, t);
+                String ans = String.format("%s,%s",key.toString(), t.toString());
+                context.write(new Text(), new Text(ans));
             }
 
 

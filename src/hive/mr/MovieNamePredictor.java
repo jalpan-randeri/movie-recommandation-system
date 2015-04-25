@@ -6,6 +6,7 @@ import conts.MovieConts;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.filecache.DistributedCache;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
@@ -48,7 +49,7 @@ public class MovieNamePredictor {
         DistributedCache.addCacheFile(new Path(otherArgs[0]).toUri(), conf);
 
         Job job = new Job(conf, "Movie Name Predictor");
-        job.setJarByClass(Replicated.class);
+        job.setJarByClass(MovieNamePredictor.class);
         job.setNumReduceTasks(10);
         job.setMapperClass(MoiveNameMapper.class);
         job.setReducerClass(MovieNameReducer.class);
@@ -64,7 +65,7 @@ public class MovieNamePredictor {
 
     }
 
-    public static class MoiveNameMapper extends Mapper<Text, Text, Text, Text> {
+    public static class MoiveNameMapper extends Mapper<LongWritable, Text, Text, Text> {
 
         private CSVParser mParser = new CSVParser();
         private HashMap<String, String> mCachedNames = new HashMap<>();
@@ -93,9 +94,10 @@ public class MovieNamePredictor {
         }
 
         @Override
-        protected void map(Text key, Text value, Context context) throws IOException, InterruptedException {
-            String movie_name = mCachedNames.get(value.toString());
-            context.write(key, new Text(movie_name));
+        protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+            String[] tokens = mParser.parseLine(value.toString());
+            String movie_name = mCachedNames.get(tokens[1]);
+            context.write(new Text(tokens[0]), new Text(movie_name));
         }
 
     }
