@@ -3,14 +3,30 @@ STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
 WITH SERDEPROPERTIES ("hbase.columns.mapping" = ":key,ratings:")
 TBLPROPERTIES ("hbase.table.name" = "TABLE_USR_RATING");
 
-
+--- NETFLIX Training Data---
 CREATE EXTERNAL TABLE netflix(user string, release_year double, watch_year double, rating double, membership int, movies string)
 STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
 WITH SERDEPROPERTIES ("hbase.columns.mapping" = ":key,netflix_dataset:AVG RELEASE YEAR, netflix_dataset:AVG WATCH YEAR, netflix_dataset:AVG_RATING, netflix_dataset:MEMBERSHIP, netflix_dataset:MOVIES")
 TBLPROPERTIES ("hbase.table.name" = "TABLE_NETFLIX_DATASET");
 
 
+
+-- KNN Table Test Set
 CREATE EXTERNAL TABLE knn_answer(user string, release_year double, watch_year double, membership int, movies string)
 STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
 WITH SERDEPROPERTIES ("hbase.columns.mapping" = ":key,netflix_dataset:AVG RELEASE YEAR, netflix_dataset:AVG WATCH YEAR,  netflix_dataset:MEMBERSHIP, netflix_dataset:MOVIES")
 TBLPROPERTIES ("hbase.table.name" = "TABLE_NAME_KNN");
+
+
+-- Movie Cluster Mapping Table
+CREATE EXTERNAL TABLE cluster_movie(id string, cluster_id string, movie_id string)
+STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+WITH SERDEPROPERTIES ("hbase.columns.mapping" = ":key,cluster_movies:cluster_id, cluster_movies:movie_id")
+TBLPROPERTIES ("hbase.table.name" = "TABLE_NAME_CLUSTER_MOVIE");
+
+
+-- Movie Name Mapping Table
+CREATE EXTERNAL TABLE movie_table(id string, name string, year string)
+STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+WITH SERDEPROPERTIES ("hbase.columns.mapping" = ":key,movies:movie_name, movies:movie_realse_year")
+TBLPROPERTIES ("hbase.table.name" = "TABLE_NAME_MOVIES");
