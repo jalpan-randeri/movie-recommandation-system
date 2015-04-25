@@ -55,7 +55,7 @@ public class KMeansReducer extends
         double total_year = 0;
         double total_rating = 0;
         for(EmitValue t : values){
-            System.out.println(t.user_id);
+//            System.out.println(t.user_id);
             list.put(t.user_id, t);
             total_year = total_year + t.year.get();
             total_rating = total_rating + t.rating.get();
