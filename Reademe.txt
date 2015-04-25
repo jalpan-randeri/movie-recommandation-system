@@ -6,7 +6,7 @@ Required Files
 3. test.csv
 
 
-Task Running Sequances:
+Task Running Sequences:
 
 Minor Tasks 0:
 1. Populate HBase
@@ -27,12 +27,17 @@ Major Task 2 :  KMeans to identify similar users based on avg_rating, avg_watch_
         - java KMeansUserClustering
 Minor Task 2.0
     1.  Membership Identifier
-        - java Membership
+        - java MembershipAssigner
 
 Major Task 3 : K Nearest Neighbours Classifier using distributed cache
     1.  Knn User matcher
         - java KnnUserMatcher test.csv
         => output table TABLE_NAME_KNN
+
+Minor Task 3.1
+    1.  Cluster to movie mapping
+        - java ClusterMovie
+        => cluster_id , movie_id
 
 Major Task 4 : Hive Join vs Map Reduce Join
     1.  Join using hive query
@@ -40,3 +45,5 @@ Major Task 4 : Hive Join vs Map Reduce Join
         -
 
     1. Join using Map Reduce
+        - java MoviePredictor output/moviePredictor
+        - java MovieNamePredictor output movie_titles.txt /moviePredictor output/movieNamePrediction

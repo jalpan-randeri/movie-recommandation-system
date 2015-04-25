@@ -19,8 +19,7 @@ public class Centroid {
 
         Centroid centroid = (Centroid) o;
 
-        if (rating_x != centroid.rating_x) return false;
-        return year_y == centroid.year_y;
+        return (int)centroid.rating_x == (int)rating_x && (int)centroid.year_y == (int)year_y;
 
     }
 

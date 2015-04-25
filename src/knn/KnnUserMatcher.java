@@ -14,6 +14,7 @@ import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
@@ -31,7 +32,7 @@ import utils.DistanceUtils;
  */
 public class KnnUserMatcher {
 
-    public static final int K = 13;
+    public static final int K = 25;
 
     public static class UserData{
         public PriorityQueue<UserInfo> queue = new PriorityQueue<>(K, Collections.reverseOrder());
@@ -96,7 +97,7 @@ public class KnnUserMatcher {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] tokens = mParser.parseLineMulti(line);
-                if(tokens.length == 6) {
+                if(tokens.length == 4) {
                     double avg_watch_year = Double.parseDouble(tokens[MovieConts.INDEX_T_WATCH_YEAR]);
                     double avg_release_year = Double.parseDouble(tokens[MovieConts.INDEX_T_RELEASE_YEAR]);
                     String movies = tokens[MovieConts.INDEX_T_MOVIES];
@@ -109,8 +110,7 @@ public class KnnUserMatcher {
 
         @Override
         protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
-            String sid = Bytes.toString(key.get());
-            long id = Long.parseLong(sid);
+
 
             // 1. read the current row
             KeyValue keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_DATASET.getBytes(),
@@ -153,11 +153,11 @@ public class KnnUserMatcher {
         protected void cleanup(Context context) throws IOException, InterruptedException {
             for(UserData u : mEmmitData.values()){
                 PriorityQueue<UserInfo> queue = u.queue;
-                for(UserInfo info : queue){
-                    if(info != null) {
-                        context.write(info.data, new Text(info.flag));
-                    }
+                while(!queue.isEmpty()) {
+                    UserInfo info = queue.remove();
+                    context.write(info.data, new Text(info.flag));
                 }
+
             }
         }
     }
@@ -199,8 +199,8 @@ public class KnnUserMatcher {
             // 2. find the best match
             String tag = getMostOccuring(neighbours);
 
-            // 3. emmit the result
-            context.write(new Text(key.user), new Text(tag));
+//            // 3. emmit the result
+//            context.write(new Text(key.user), new Text(tag));
             // 4 insert into Hbase
 
             Put row = new Put(key.user.getBytes());
@@ -432,8 +432,8 @@ public class KnnUserMatcher {
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(conf, args)
                 .getRemainingArgs();
-        if (otherArgs.length != 2) {
-            System.err.println("Usage: KNN <distrubuted> <output>");
+        if (otherArgs.length != 1) {
+            System.err.println("Usage: KNN <test.csv>");
             System.exit(2);
         }
 
@@ -451,15 +451,15 @@ public class KnnUserMatcher {
         job.setGroupingComparatorClass(KeyGrouppingComparator.class);
         job.setSortComparatorClass(KeySortingComparator.class);
         job.setPartitionerClass(KnnPartitioner.class);
-//        job.setGroupingComparatorClass(KNNGroupComparator.class);
         job.setNumReduceTasks(K);
 
 
         job.setOutputKeyClass(KeyUserDistance.class);
         job.setOutputValueClass(Text.class);
+        job.setOutputFormatClass(TableOutputFormat.class);
 
-
-        FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
+//        FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
+        job.getConfiguration().set(TableOutputFormat.OUTPUT_TABLE, TableConts.TABLE_NAME_KNN);
 
         Scan scan = new Scan();
         scan.addFamily(TableConts.FAMILY_TBL_DATASET.getBytes());

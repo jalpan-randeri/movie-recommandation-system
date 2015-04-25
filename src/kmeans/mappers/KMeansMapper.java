@@ -57,13 +57,13 @@ public class KMeansMapper extends TableMapper<IntWritable, EmitValue> {
 
         // 1. read the current row
         KeyValue keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_DATASET.getBytes(),
-                TableConts.COL_TBL_DATASET_AVG_RATING.getBytes());
-        double avg_rating = Double.parseDouble(Bytes.toString(keyValue.getValue()));
+                TableConts.COL_TBL_DATASET_AVG_RELEASE_YEAR.getBytes());
+        double avg_release = Double.parseDouble(Bytes.toString(keyValue.getValue()));
 
 
         keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_DATASET.getBytes(),
                 TableConts.COL_TBL_DATASET_AVG_WATCHED_YEAR.getBytes());
-        double avg_year = Double.parseDouble(Bytes.toString(keyValue.getValue()));
+        double avg_watch = Double.parseDouble(Bytes.toString(keyValue.getValue()));
 
         // 2. get the closest match from the given centroid to the current user
         double closest = Integer.MAX_VALUE;
@@ -71,7 +71,7 @@ public class KMeansMapper extends TableMapper<IntWritable, EmitValue> {
         for (int i = 0; i < centroids.size(); i++) {
             Centroid c = centroids.get(i);
 
-            double dist = DistanceUtils.getEuclideanDistance(avg_rating, avg_year,
+            double dist = DistanceUtils.getEuclideanDistance(avg_release, avg_watch,
                     c.rating_x, c.year_y);
             if (dist < closest) {
                 closest = dist;
@@ -80,7 +80,7 @@ public class KMeansMapper extends TableMapper<IntWritable, EmitValue> {
         }
 //        System.out.println("Closest "+centroid_id);
 
-        EmitValue e_value = new EmitValue(user_id, avg_rating, avg_year);
+        EmitValue e_value = new EmitValue(user_id, avg_release, avg_watch);
 
         // 3. emmit the match with corresponding cluster id as key and value as user info
         context.write(new IntWritable(centroid_id), e_value);

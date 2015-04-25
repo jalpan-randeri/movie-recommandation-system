@@ -55,7 +55,7 @@ public class Replicated {
 
     public static class HMoviesMapper extends Mapper<LongWritable, Text, LongWritable, YearRatingNameValue> {
 
-        private HashMap<String, String> mCachedNames = new HashMap<>();
+//        private HashMap<String, String> mCachedNames = new HashMap<>();
         private HashMap<String, Integer> mCachedYear = new HashMap<>();
         private CSVParser mParser = new CSVParser();
 
@@ -77,7 +77,7 @@ public class Replicated {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] tokens = mParser.parseLine(line);
-                mCachedNames.put(tokens[MovieConts.INDEX_R_MOVIE_ID], tokens[MovieConts.INDEX_R_MOVIE_NAME]);
+//                mCachedNames.put(tokens[MovieConts.INDEX_R_MOVIE_ID], tokens[MovieConts.INDEX_R_MOVIE_NAME]);
                 mCachedYear.put(tokens[MovieConts.INDEX_R_MOVIE_ID],
                         Integer.parseInt(tokens[MovieConts.INDEX_R_MOVIE_YEAR]));
             }
@@ -95,9 +95,9 @@ public class Replicated {
 
 
             double rating = Integer.parseInt(tokens[MovieConts.INDEX_MOVIE_RATING]) - 2.5;
-            String name = mCachedNames.get(tokens[MovieConts.INDEX_MOVIE_ID]);
+//            String name = mCachedNames.get(tokens[MovieConts.INDEX_MOVIE_ID]);
 
-            YearRatingNameValue emmit_value = new YearRatingNameValue(watch_year, release_year, rating, name);
+            YearRatingNameValue emmit_value = new YearRatingNameValue(watch_year, release_year, rating, tokens[MovieConts.INDEX_MOVIE_ID]);
 
             context.write(new LongWritable(emit_key), emmit_value);
         }
