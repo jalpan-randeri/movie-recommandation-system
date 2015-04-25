@@ -69,7 +69,7 @@ public class CentroidUtils {
             String y = Bytes.toString(cy);
 
             if(x != null && y != null) {
-                list.add(new Centroid(Integer.parseInt(x), Integer.parseInt(y)));
+                list.add(new Centroid(Double.parseDouble(x), Double.parseDouble(y)));
             }
         }
 

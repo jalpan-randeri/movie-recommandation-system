@@ -32,7 +32,7 @@ import utils.DistanceUtils;
  */
 public class KnnUserMatcher {
 
-    public static final int K = 13;
+    public static final int K = 25;
 
     public static class UserData{
         public PriorityQueue<UserInfo> queue = new PriorityQueue<>(K, Collections.reverseOrder());
@@ -97,7 +97,7 @@ public class KnnUserMatcher {
             String line;
             while ((line = reader.readLine()) != null) {
                 String[] tokens = mParser.parseLineMulti(line);
-                if(tokens.length == 6) {
+                if(tokens.length == 4) {
                     double avg_watch_year = Double.parseDouble(tokens[MovieConts.INDEX_T_WATCH_YEAR]);
                     double avg_release_year = Double.parseDouble(tokens[MovieConts.INDEX_T_RELEASE_YEAR]);
                     String movies = tokens[MovieConts.INDEX_T_MOVIES];
@@ -153,11 +153,11 @@ public class KnnUserMatcher {
         protected void cleanup(Context context) throws IOException, InterruptedException {
             for(UserData u : mEmmitData.values()){
                 PriorityQueue<UserInfo> queue = u.queue;
-                for(UserInfo info : queue){
-                    if(info != null) {
-                        context.write(info.data, new Text(info.flag));
-                    }
+                while(!queue.isEmpty()) {
+                    UserInfo info = queue.remove();
+                    context.write(info.data, new Text(info.flag));
                 }
+
             }
         }
     }
@@ -432,8 +432,8 @@ public class KnnUserMatcher {
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(conf, args)
                 .getRemainingArgs();
-        if (otherArgs.length != 2) {
-            System.err.println("Usage: KNN <distrubuted> <output>");
+        if (otherArgs.length != 1) {
+            System.err.println("Usage: KNN <test.csv>");
             System.exit(2);
         }
 
@@ -451,15 +451,14 @@ public class KnnUserMatcher {
         job.setGroupingComparatorClass(KeyGrouppingComparator.class);
         job.setSortComparatorClass(KeySortingComparator.class);
         job.setPartitionerClass(KnnPartitioner.class);
-//        job.setGroupingComparatorClass(KNNGroupComparator.class);
         job.setNumReduceTasks(K);
 
 
         job.setOutputKeyClass(KeyUserDistance.class);
         job.setOutputValueClass(Text.class);
+        job.setOutputFormatClass(TableOutputFormat.class);
 
-
-        FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
+//        FileOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
         job.getConfiguration().set(TableOutputFormat.OUTPUT_TABLE, TableConts.TABLE_NAME_KNN);
 
         Scan scan = new Scan();

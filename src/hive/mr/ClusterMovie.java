@@ -4,7 +4,6 @@ import conts.DatasetConts;
 import conts.TableConts;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -13,11 +12,10 @@ import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
-import org.apache.hadoop.util.GenericOptionsParser;
 
 import java.io.IOException;
 
@@ -32,12 +30,6 @@ import java.io.IOException;
 public class ClusterMovie {
     public static void main(String[] args) throws InterruptedException, IOException, ClassNotFoundException {
         Configuration conf = new Configuration();
-        String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-
-        if(otherArgs.length != 1){
-            System.out.println("Usage : ClusterMovie <output>");
-            System.exit(1);
-        }
 
         createTable(conf);
 
@@ -51,7 +43,10 @@ public class ClusterMovie {
         job.setOutputKeyClass(NullWritable.class);
         job.setOutputValueClass(NullWritable.class);
 
-        FileOutputFormat.setOutputPath(job, new Path(otherArgs[0]));
+        job.setOutputFormatClass(TableOutputFormat.class);
+
+
+        job.getConfiguration().set(TableOutputFormat.OUTPUT_TABLE, TableConts.TABLE_NAME_CLUSTER_MOVIES);
 
         Scan scan = new Scan();
         scan.addFamily(TableConts.FAMILY_TBL_DATASET.getBytes());
@@ -114,8 +109,11 @@ public class ClusterMovie {
             for (String m : movies.split(DatasetConts.SEPARATOR)) {
                 Put row = new Put(String.format("%s,%s", cluster_id, m).getBytes());
                 row.add(TableConts.FAMILY_TBL_CLUSTER_MOVIES.getBytes(),
-                        TableConts.COL_TBL_CLUSTER_MOVIES_DUMMY.getBytes(),
-                        "NULL".getBytes());
+                        TableConts.COL_TBL_CLUSTER_MOVIES_CLUSTER.getBytes(),
+                        cluster_id.getBytes());
+                row.add(TableConts.FAMILY_TBL_CLUSTER_MOVIES.getBytes(),
+                        TableConts.COL_TBL_CLUSTER_MOVIES_MOVIE.getBytes(),
+                        m.getBytes());
                 mTable.put(row);
             }
         }

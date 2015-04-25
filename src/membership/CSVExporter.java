@@ -11,6 +11,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashSet;
 
 /**
  * Created by jalpanranderi on 4/23/15.
@@ -43,6 +44,7 @@ public class CSVExporter {
         // Getting the scan result
         ResultScanner scanner = mDataset.getScanner(scan);
 
+        HashSet<String> map = new HashSet<>();
 
         // Reading values from scan result
         int count = 0;
@@ -79,11 +81,17 @@ public class CSVExporter {
             }
             builder.deleteCharAt(builder.length() - 1);
 
-            String s = String.format("%s,%s,%s,%s,%s,\"%s\"\n", user_id, flag, avg_rating, avg_watch, avg_relasae_year, builder.toString());
+
+            String s = String.format("%s,%s,%s,\"%s\"\n", user_id, avg_watch, avg_relasae_year, builder.toString());
             writer.write(s);
-            if(count == 500)
+            if(count == 500){
                 break;
+            }
+
+
         }
+
+
         //closing the scanner
         scanner.close();
 

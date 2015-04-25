@@ -53,25 +53,27 @@ public class KMeansReducer extends
         // TODO: something is not working here
         HashMap<String,EmitValue> list = new HashMap<>();
         double total_year = 0;
-        double total_rating = 0;
+        double total_release = 0;
         for(EmitValue t : values){
 //            System.out.println(t.user_id);
             list.put(t.user_id, t);
             total_year = total_year + t.year.get();
-            total_rating = total_rating + t.rating.get();
+            total_release = total_release + t.rating.get();
         }
 
         // 3. find the new centroid as average of cluster
-        int new_rating = (int) (total_rating / list.size());
-        int new_year = (int) (total_year / list.size());
+        double new_relese = total_release / list.size();
+        double new_year =  total_year / list.size();
 
 
         // 4. save centroid
-        saveCentroid(String.valueOf(cluster_id), new_rating, new_year);
+        saveCentroid(String.valueOf(cluster_id), new_relese, new_year);
 
         // 5. save members
         // TODO: move this into cleanup phase
         addToCluster(mClusters, list, String.valueOf(cluster_id));
+
+        System.out.printf("Cluster id : %d => %d\n",cluster_id, list.size());
     }
 
     /**
@@ -79,7 +81,7 @@ public class KMeansReducer extends
      * @param id String centroid id
      * @throws IOException
      */
-    private void saveCentroid(String id, int x, int y) throws IOException {
+    private void saveCentroid(String id, double x, double y) throws IOException {
         Put row = new Put(id.getBytes());
         row.add(TableConts.FAMILY_CENTROID.getBytes(),
                 TableConts.COL_TBL_CENTROID_COL_X.getBytes(), String.valueOf(x).getBytes());

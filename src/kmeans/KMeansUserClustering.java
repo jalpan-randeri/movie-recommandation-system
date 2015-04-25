@@ -23,6 +23,7 @@ import kmeans.model.EmitValue;
 import kmeans.reducers.KMeansReducer;
 import kmeans.utils.CentroidUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -31,6 +32,8 @@ import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.util.GenericOptionsParser;
+import utils.FileUtils;
 
 import java.io.IOException;
 import java.util.List;
@@ -46,7 +49,12 @@ public class KMeansUserClustering {
             ClassNotFoundException, InterruptedException {
 
         Configuration conf = new Configuration();
+        String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
 
+        if(otherArgs.length != 1){
+            System.out.println("Usage : KMeanseUserClustering <centroids> ");
+            System.exit(0);
+        }
 
         initCentroidTable(conf);
         setupConnectionToTables(conf);
@@ -56,7 +64,7 @@ public class KMeansUserClustering {
         int itr = 0;
 
 
-        String[] centroids = {"1001461,2.0,2003.0", "1001779,2.0,2004.0", "1005769,5.0,2004.0", "1007254,4.0,2005.0", "1007809,4.0,2003.0"};
+        List<String> centroids = FileUtils.readFile(new Path(args[0]));
         initializePreviousCentroidTable(KMeansConts.K, centroids);
 
         while (!isConverged && itr < 50) {
@@ -135,10 +143,10 @@ public class KMeansUserClustering {
             centroids[i] = update_centroid.get(i) == null ? prev_centroids.get(i) : update_centroid.get(i);
         }
 
-        resetPreviousCentroidTable(k, centroids);
+        resetPreviousCentroidTable(centroids);
     }
 
-    private static void resetPreviousCentroidTable(int k, Centroid[] centroids) throws IOException {
+    private static void resetPreviousCentroidTable(Centroid[] centroids) throws IOException {
         for (int i = 0; i < centroids.length; i++) {
 
             String x = String.valueOf(centroids[i].rating_x);
@@ -161,16 +169,16 @@ public class KMeansUserClustering {
      * @param centroids String[] centroids
      * @throws IOException
      */
-    private static void initializePreviousCentroidTable(int k, String[] centroids) throws IOException {
+    private static void initializePreviousCentroidTable(int k, List<String> centroids) throws IOException {
         for (int i = 0; i < k; i++) {
-            String[] tokens = centroids[i].split(DatasetConts.SEPARATOR);
+            String[] tokens = centroids.get(i).split(DatasetConts.SEPARATOR);
 
             Put row = new Put(String.valueOf(i).getBytes());
 
             row.add(TableConts.FAMILY_CENTROID.getBytes(),
-                    TableConts.COL_TBL_CENTROID_COL_X.getBytes(), tokens[1].getBytes());
+                    TableConts.COL_TBL_CENTROID_COL_X.getBytes(), tokens[0].getBytes());
             row.add(TableConts.FAMILY_CENTROID.getBytes(),
-                    TableConts.COL_TBL_CENTROID_COL_Y.getBytes(), tokens[2].getBytes());
+                    TableConts.COL_TBL_CENTROID_COL_Y.getBytes(), tokens[1].getBytes());
 
             mCentroidTable.put(row);
         }
