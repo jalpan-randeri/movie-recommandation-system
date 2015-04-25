@@ -1,7 +1,6 @@
 package populate.hbase;
 
 import com.opencsv.CSVParser;
-import conts.DatasetConts;
 import conts.MovieConts;
 import conts.TableConts;
 import org.apache.hadoop.conf.Configuration;
@@ -12,7 +11,6 @@ import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.client.HBaseAdmin;
 import org.apache.hadoop.hbase.client.HTable;
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.NullWritable;
 import org.apache.hadoop.io.Text;
@@ -103,12 +101,12 @@ public class HPopulateTrainigTable {
             String[] tokens = mParser.parseLine(value.toString());
 
 
-            String row_key = tokens[MovieConts.INDEX_KEY];
+            String row_key = tokens[MovieConts.INDEX_MOVIE_KEY];
 
             Put row = new Put(row_key.getBytes());
             row.add(TableConts.FAMILY_TBL_TRAIN.getBytes(),
                     TableConts.COL_TBL_TRAING_USER_ID.getBytes(),
-                    tokens[MovieConts.INDEX_CUST_ID].getBytes());
+                    tokens[MovieConts.INDEX_MOVIE_CUST_ID].getBytes());
 
             row.add(TableConts.FAMILY_TBL_TRAIN.getBytes(),
                     TableConts.COL_TBL_TRAIN_MOVIE_ID.getBytes(),
@@ -120,7 +118,7 @@ public class HPopulateTrainigTable {
 
             row.add(TableConts.FAMILY_TBL_TRAIN.getBytes(),
                     TableConts.COL_TBL_TRAIN_RATING.getBytes(),
-                    tokens[MovieConts.INDEX_RATING].getBytes());
+                    tokens[MovieConts.INDEX_MOVIE_RATING].getBytes());
             mTable.put(row);
 
 

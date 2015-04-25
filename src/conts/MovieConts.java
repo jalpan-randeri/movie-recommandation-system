@@ -5,10 +5,10 @@ package conts;
  */
 public class MovieConts {
     // File Reader
-    public static final int INDEX_KEY = 0;
+    public static final int INDEX_MOVIE_KEY = 0;
     public static final int INDEX_MOVIE_ID = 1;
-    public static final int INDEX_CUST_ID = 2;
-    public static final int INDEX_RATING = 3;
+    public static final int INDEX_MOVIE_CUST_ID = 2;
+    public static final int INDEX_MOVIE_RATING = 3;
     public static final int INDEX_MOVIE_RATING_YEAR = 4;
 
 

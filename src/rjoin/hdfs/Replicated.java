@@ -88,25 +88,26 @@ public class Replicated {
         protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
             String[] tokens = mParser.parseLine(value.toString());
 
-            long emit_key = Long.parseLong(tokens[MovieConts.INDEX_CUST_ID]);
+            long emit_key = Long.parseLong(tokens[MovieConts.INDEX_MOVIE_CUST_ID]);
 
-//            int movie_year = mCachedYear.get(tokens[MovieConts.INDEX_R_MOVIE_ID]);
-            int rating_year = getYear(tokens[MovieConts.INDEX_MOVIE_RATING_YEAR]);
-            int year = rating_year; //- movie_year;
+            int release_year = mCachedYear.get(tokens[MovieConts.INDEX_MOVIE_ID]);
+            int watch_year = getYear(tokens[MovieConts.INDEX_MOVIE_RATING_YEAR]);
 
-            double rating = Integer.parseInt(tokens[MovieConts.INDEX_RATING]) - 2.5;
+
+            double rating = Integer.parseInt(tokens[MovieConts.INDEX_MOVIE_RATING]) - 2.5;
             String name = mCachedNames.get(tokens[MovieConts.INDEX_MOVIE_ID]);
-            YearRatingNameValue emmit_value = new YearRatingNameValue(year, rating, name);
+
+            YearRatingNameValue emmit_value = new YearRatingNameValue(watch_year, release_year, rating, name);
 
             context.write(new LongWritable(emit_key), emmit_value);
         }
 
 
         /**
-         * get year will return the year form the string
+         * get watch_year will return the watch_year form the string
          *
          * @param year String date representation as yyyy-mm-dd
-         * @return int year
+         * @return int watch_year
          */
         private int getYear(String year) {
             return Integer.parseInt(year.substring(0, 4));
@@ -119,55 +120,64 @@ public class Replicated {
 
         @Override
         protected void reduce(LongWritable key, Iterable<YearRatingNameValue> values, Context context) throws IOException, InterruptedException {
-            double avg_year = 0;
+            // 1. get the data from the list
+            double total_watch_year = 0;
+            double total_release_year = 0;
+            double total_rating = 0;
             long count = 0;
-            double avg_rating = 0;
 
-            StringBuilder builder = new StringBuilder();
+            StringBuilder movies = new StringBuilder();
             for (YearRatingNameValue v : values) {
-                avg_year = avg_year + v.year;
-                avg_rating = avg_rating + v.rating.get();
+                total_watch_year = total_watch_year + v.watch_year;
+                total_rating = total_rating + v.rating.get();
+                total_release_year = total_release_year + v.release_year;
                 count++;
-                builder.append(v.name);
-                builder.append(DatasetConts.SEPARATOR);
+                movies.append(v.name);
+                movies.append(DatasetConts.SEPARATOR);
             }
+            movies.deleteCharAt(movies.length() - 1);
 
-            avg_rating = avg_rating / count;
-            avg_year = avg_year / count;
+            double avg_rating = Math.round(total_rating / count);
+            double avg_watch_year = Math.round(total_watch_year / count);
+            double avg_release_year = Math.round(total_release_year / count);
 
-            context.write(key, generateValue(avg_rating, avg_year, builder.toString()));
+            context.write(key, generateValue(avg_rating, avg_watch_year, avg_release_year, movies.toString()));
         }
 
         /**
          * generate value will create a string for avg_rating, avg_year, movie_list
          *
-         * @param avg_rating  Long average watch_rating
-         * @param avg_year    Long average year
+         * @param avg_rating  Long average rating
+         * @param avg_watch    Long average watch_year
+         * @param avg_realease    Long average watch_year
          * @param movies_list String
          * @return Text
          */
-        private Text generateValue(double avg_rating, double avg_year, String movies_list) {
-            return new Text(String.format("%.2f, %.2f, %s", avg_rating, avg_year, movies_list));
+        private Text generateValue(double avg_rating, double avg_watch, double avg_realease, String movies_list) {
+            return new Text(String.format("%.2f,%.2f,%.2f,%s", avg_rating, avg_watch, avg_realease, movies_list));
         }
     }
 
 
     public static class YearRatingNameValue implements WritableComparable<YearRatingNameValue> {
 
-        public int year;
+        public int watch_year;
         public DoubleWritable rating;
+        public int release_year;
         public String name;
 
         public YearRatingNameValue() {
-            year = 0;
+            watch_year = 0;
             rating = new DoubleWritable(0);
+            release_year = 0;
             name = null;
         }
 
-    public YearRatingNameValue(int year, double rating, String name) {
-            this.year = year;
+        public YearRatingNameValue(int watch_year,  int release_year, double rating, String mName) {
+            this.watch_year = watch_year;
             this.rating = new DoubleWritable(rating);
-            this.name = name;
+            this.name = mName;
+            this.release_year = release_year;
         }
 
 
@@ -178,25 +188,33 @@ public class Replicated {
 
             YearRatingNameValue ratYKey = (YearRatingNameValue) o;
 
-            if (year != ratYKey.year) return false;
+            if (watch_year != ratYKey.watch_year) return false;
             if (rating != ratYKey.rating) return false;
             return !(name != null ? !name.equals(ratYKey.name) : ratYKey.name != null);
 
         }
 
-
+        @Override
+        public int hashCode() {
+            int result = watch_year;
+            result = (int) (31 * result + rating.get());
+            result = 31 * result + (name != null ? name.hashCode() : 0);
+            return result;
+        }
 
         @Override
         public void write(DataOutput dataOutput) throws IOException {
-            WritableUtils.writeVInt(dataOutput, year);
+            WritableUtils.writeVInt(dataOutput, watch_year);
             rating.write(dataOutput);
+            WritableUtils.writeVInt(dataOutput, release_year);
             WritableUtils.writeString(dataOutput, name);
         }
 
         @Override
         public void readFields(DataInput dataInput) throws IOException {
-            year = WritableUtils.readVInt(dataInput);
+            watch_year = WritableUtils.readVInt(dataInput);
             rating.readFields(dataInput);
+            release_year = WritableUtils.readVInt(dataInput);
             name = WritableUtils.readString(dataInput);
         }
 
@@ -205,7 +223,7 @@ public class Replicated {
             if (!name.equals(o.name)) {
                 return name.compareTo(o.name);
             } else {
-                return Integer.compare(year, o.year) == 0 ?
+                return Integer.compare(watch_year, o.watch_year) == 0 ?
                         Double.compare(rating.get(), o.rating.get()) : 0;
             }
         }

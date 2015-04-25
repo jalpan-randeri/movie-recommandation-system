@@ -43,9 +43,9 @@ public class DistanceUtils {
 
 
     /**
-     * getRating extract the watch_rating from the given value tokens.
+     * getRating extract the rating from the given value tokens.
      * @param token String representing (Movie_id,Rating$)
-     * @return int watch_rating square;
+     * @return int rating square;
      */
     private static double getRating(String token) {
         return Double.parseDouble(token.split(DatasetConts.SEPARATOR)[1]
@@ -65,9 +65,9 @@ public class DistanceUtils {
     /**
      * get multiplication of common movies in two lists
      *
-     * @param sorted_list1 sorted List[String] representing movie,watch_rating
-     * @param sorted_list2 sorted List[String] representing movie,watch_rating
-     * @return Double the common movie watch_rating multiplication.
+     * @param sorted_list1 sorted List[String] representing movie,rating
+     * @param sorted_list2 sorted List[String] representing movie,rating
+     * @return Double the common movie rating multiplication.
      */
     private static double getCommons(String[] sorted_list1, String[] sorted_list2) {
         double common = 0;

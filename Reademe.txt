@@ -1,0 +1,14 @@
+Task Running Sequance
+
+Required Files
+1. dataset_new.csv
+2. movie_title.txt
+3. test.csv
+
+
+Task Running Sequances:
+
+1. Replicated Join
+    - Replicated.java movie_titles.txt dataset_new.csv output/rjoin
+
+    => output file format - user_id, avg_rating, avg_watch_year, avg_release_year, movie_list

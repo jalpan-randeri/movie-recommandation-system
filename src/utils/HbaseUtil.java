@@ -17,7 +17,7 @@ public class HbaseUtil {
      * get the list of all the movies this user has rated
      *
      * @param user_id String as user_id which is key in hbase table
-     * @return String representing the list of all the movie,watch_rating $ separated.
+     * @return String representing the list of all the movie,rating $ separated.
      * @throws IOException
      */
     public static String getMoviesList(HTableInterface table, String user_id) throws IOException {
@@ -33,10 +33,10 @@ public class HbaseUtil {
 
 
     /**
-     * get the average watch_rating and movie year of the user
+     * get the average rating and movie watch_year of the user
      * @param table HTable interface to access the hbase
      * @param userid String user id
-     * @return RatYear object as the pair of the average watch_rating and average year;
+     * @return RatYear object as the pair of the average rating and average watch_year;
      * @throws IOException
      */
     public static RatYear getUserAvgRatingYear(HTableInterface table, long userid) throws IOException {

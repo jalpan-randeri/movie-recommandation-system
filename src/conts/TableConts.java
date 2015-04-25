@@ -10,7 +10,7 @@ public class TableConts {
     public static final String KEY_USR_RATING = "USR_ID";
     public static final String TABLE_COL_RATING ="RATING";
 
-    // User Movie watch_rating table
+    // User Movie rating table
     public static final String TABLE_NAME_USR_MOV = "TABLE_USR_MOV_MAPPING";
     public static final String FAMILY_USR_MOV = "movies";
     public static final String KEY_USR_MOV_USR = "USR_ID";

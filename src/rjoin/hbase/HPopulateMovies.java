@@ -1,13 +1,9 @@
 package rjoin.hbase;
 
 
-import com.opencsv.CSVParser;
 import conts.DatasetConts;
-import conts.MovieConts;
 import conts.TableConts;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.filecache.DistributedCache;
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
@@ -19,15 +15,9 @@ import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.hadoop.io.LongWritable;
-import org.apache.hadoop.io.Text;
-import org.apache.hadoop.io.WritableComparable;
-import org.apache.hadoop.io.WritableUtils;
+import org.apache.hadoop.io.*;
 import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.util.GenericOptionsParser;
 
 import java.io.*;
 import java.util.HashMap;
@@ -180,7 +170,7 @@ public class HPopulateMovies {
 
             keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_TRAIN.getBytes(),
                     TableConts.COL_TBL_TRAIN_RATING.getBytes());
-            int rating = Integer.parseInt(Bytes.toString(keyValue.getValue()));
+            double rating = Integer.parseInt(Bytes.toString(keyValue.getValue())) - 2.5;
 
 
             keyValue = value.getColumnLatest(TableConts.FAMILY_TBL_TRAIN.getBytes(),
@@ -200,10 +190,10 @@ public class HPopulateMovies {
 
 
         /**
-         * get year will return the year form the string
+         * get watch_year will return the watch_year form the string
          *
          * @param year String date representation as yyyy-mm-dd
-         * @return int year
+         * @return int watch_year
          */
         private int getYear(String year) {
             return Integer.parseInt(year.substring(0, 4));
@@ -221,7 +211,7 @@ public class HPopulateMovies {
         protected void setup(Context context) throws IOException, InterruptedException {
             mTable = new HTable(HBaseConfiguration.create(), TableConts.TABLE_NAME_DATASET);
             mTable.setAutoFlush(false);
-
+            mTable.setWriteBufferSize(TableConts.MB_100);
         }
 
 
@@ -237,8 +227,8 @@ public class HPopulateMovies {
 
             StringBuilder movies = new StringBuilder();
             for (YearRatingNameValue v : values) {
-                total_watch_year = total_watch_year + v.year;
-                total_rating = total_rating + v.watch_rating;
+                total_watch_year = total_watch_year + v.watch_year;
+                total_rating = total_rating + v.rating.get();
                 total_release_year = total_release_year + v.release_year;
                 count++;
                 movies.append(v.name);
@@ -285,23 +275,23 @@ public class HPopulateMovies {
 
     public static class YearRatingNameValue implements WritableComparable<YearRatingNameValue> {
 
-        public int year;
-        public int watch_rating;
+        public int watch_year;
+        public DoubleWritable rating;
         public int release_year;
         public String name;
 
         public YearRatingNameValue() {
-            year = 0;
-            watch_rating = 0;
+            watch_year = 0;
+            rating = new DoubleWritable(0);
             release_year = 0;
             name = null;
         }
 
-        public YearRatingNameValue(int mYear,  int mReleaseYear, int mRating, String mName) {
-            this.year = mYear;
-            this.watch_rating = mRating;
+        public YearRatingNameValue(int watch_year,  int release_year, double rating, String mName) {
+            this.watch_year = watch_year;
+            this.rating = new DoubleWritable(rating);
             this.name = mName;
-            this.release_year = mReleaseYear;
+            this.release_year = release_year;
         }
 
 
@@ -312,32 +302,32 @@ public class HPopulateMovies {
 
             YearRatingNameValue ratYKey = (YearRatingNameValue) o;
 
-            if (year != ratYKey.year) return false;
-            if (watch_rating != ratYKey.watch_rating) return false;
+            if (watch_year != ratYKey.watch_year) return false;
+            if (rating != ratYKey.rating) return false;
             return !(name != null ? !name.equals(ratYKey.name) : ratYKey.name != null);
 
         }
 
         @Override
         public int hashCode() {
-            int result = year;
-            result = 31 * result + watch_rating;
+            int result = watch_year;
+            result = (int) (31 * result + rating.get());
             result = 31 * result + (name != null ? name.hashCode() : 0);
             return result;
         }
 
         @Override
         public void write(DataOutput dataOutput) throws IOException {
-            WritableUtils.writeVInt(dataOutput, year);
-            WritableUtils.writeVInt(dataOutput, watch_rating);
+            WritableUtils.writeVInt(dataOutput, watch_year);
+            rating.write(dataOutput);
             WritableUtils.writeVInt(dataOutput, release_year);
             WritableUtils.writeString(dataOutput, name);
         }
 
         @Override
         public void readFields(DataInput dataInput) throws IOException {
-            year = WritableUtils.readVInt(dataInput);
-            watch_rating = WritableUtils.readVInt(dataInput);
+            watch_year = WritableUtils.readVInt(dataInput);
+            rating.readFields(dataInput);
             release_year = WritableUtils.readVInt(dataInput);
             name = WritableUtils.readString(dataInput);
         }
@@ -347,8 +337,8 @@ public class HPopulateMovies {
             if (!name.equals(o.name)) {
                 return name.compareTo(o.name);
             } else {
-                return Integer.compare(year, o.year) == 0 ?
-                        Integer.compare(watch_rating, o.watch_rating) : 0;
+                return Integer.compare(watch_year, o.watch_year) == 0 ?
+                        Double.compare(rating.get(), o.rating.get()) : 0;
             }
         }
     }
